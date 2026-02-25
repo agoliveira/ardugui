@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { background: #070b14; color: #f1f5f9; font-family: monospace; padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(3, 340px); gap: 16px; }
+.card { background: #121c2e; border: 1px solid #1e3050; border-radius: 12px; padding: 16px; }
+.card h3 { color: #f59e0b; margin: 0 0 8px 0; font-size: 14px; }
+svg { width: 100%; max-width: 340px; }
+h2 { color: #f59e0b; }
+</style>
+</head>
+<body>
+
+<h2>PLANE Calibration Views</h2>
+<div class="grid">
+
+<div class="card"><h3>1. Level</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <!-- Plane side at cy=76 -->
+  <g>
+    <!-- Fuselage -->
+    <path fill="#cbd5e1" d="
+      M104,76 C104,74 100,72 94,72 L52,72 L48,72 L48,58 L42,58 L40,72 L36,73 L36,79
+      L40,80 L48,80 L52,80 L94,80 C100,80 104,78 104,76 Z
+    "/>
+    <!-- Nose cone green -->
+    <path fill="#4ade80" d="
+      M104,76 C104,74 100,72.5 98,72.5 L98,79.5 C100,79.5 104,78 104,76 Z
+    " opacity="0.9"/>
+    <circle cx="105" cy="76" r="1.5" fill="#4ade80"/>
+    <!-- Wing -->
+    <path fill="#cbd5e1" opacity="0.85" d="M76,72 L78,62 L68,62 L66,72 Z"/>
+    <!-- H-stab -->
+    <path fill="#a78bfa" opacity="0.65" d="M44,80 L36,78 L36,81 L44,80 Z"/>
+    <!-- V-tail -->
+    <path fill="#a78bfa" opacity="0.8" d="M48,72 L46,58 L42,58 L42,72 Z"/>
+  </g>
+</svg>
+</div>
+
+<div class="card"><h3>2. Upside Down</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <!-- Flipped: translate(0,136) scale(1,-1) on vehicle at cy=68 -->
+  <g transform="translate(0,136) scale(1,-1)">
+    <g>
+      <path fill="#cbd5e1" d="
+        M104,68 C104,66 100,64 94,64 L52,64 L48,64 L48,50 L42,50 L40,64 L36,65 L36,71
+        L40,72 L48,72 L52,72 L94,72 C100,72 104,70 104,68 Z
+      "/>
+      <path fill="#4ade80" d="M104,68 C104,66 100,64.5 98,64.5 L98,71.5 C100,71.5 104,70 104,68 Z" opacity="0.9"/>
+      <circle cx="105" cy="68" r="1.5" fill="#4ade80"/>
+      <path fill="#cbd5e1" opacity="0.85" d="M76,64 L78,54 L68,54 L66,64 Z"/>
+      <path fill="#a78bfa" opacity="0.8" d="M48,64 L46,50 L42,50 L42,64 Z"/>
+    </g>
+  </g>
+  <!-- Flip arrow -->
+  <path d="M 124,28 A 13,13 0 1,1 124,56" fill="none" stroke="#cbd5e1" stroke-width="1.5" opacity="0.65"/>
+  <polygon points="124,56 121,51 127,51" fill="#cbd5e1" opacity="0.65"/>
+  <text x="124" y="45" text-anchor="middle" fill="#cbd5e1" font-size="7" font-weight="900" opacity="0.65">FLIP</text>
+</svg>
+</div>
+
+<div class="card"><h3>3. Left Side Down</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <g transform="rotate(90, 70, 50)">
+    <!-- Plane front -->
+    <line x1="62" y1="51" x2="36" y2="51" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+    <line x1="78" y1="51" x2="104" y2="51" stroke="#22d3ee" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="70" cy="50" rx="8" ry="10" fill="#cbd5e1"/>
+    <rect x="68.5" y="28" width="3" height="13" rx="1" fill="#a78bfa" opacity="0.7"/>
+    <circle cx="70" cy="50" r="3.5" fill="#4ade80" opacity="0.85"/>
+  </g>
+  <text x="94" y="18" text-anchor="middle" fill="#22d3ee" font-size="8" font-weight="900">R ↑</text>
+  <text x="58" y="88" text-anchor="middle" fill="#f59e0b" font-size="8" font-weight="900">L ↓</text>
+</svg>
+</div>
+
+<div class="card"><h3>4. Right Side Down</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <g transform="rotate(-90, 70, 50)">
+    <line x1="62" y1="51" x2="36" y2="51" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+    <line x1="78" y1="51" x2="104" y2="51" stroke="#22d3ee" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="70" cy="50" rx="8" ry="10" fill="#cbd5e1"/>
+    <rect x="68.5" y="28" width="3" height="13" rx="1" fill="#a78bfa" opacity="0.7"/>
+    <circle cx="70" cy="50" r="3.5" fill="#4ade80" opacity="0.85"/>
+  </g>
+  <text x="46" y="18" text-anchor="middle" fill="#f59e0b" font-size="8" font-weight="900">L ↑</text>
+  <text x="82" y="88" text-anchor="middle" fill="#22d3ee" font-size="8" font-weight="900">R ↓</text>
+</svg>
+</div>
+
+<div class="card"><h3>5. Nose Down</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <!-- rotate(90) = CW = nose goes DOWN -->
+  <g transform="rotate(90, 70, 48)">
+    <g>
+      <path fill="#cbd5e1" d="
+        M104,48 C104,46 100,44 94,44 L52,44 L48,44 L48,30 L42,30 L40,44 L36,45 L36,51
+        L40,52 L48,52 L52,52 L94,52 C100,52 104,50 104,48 Z
+      "/>
+      <path fill="#4ade80" d="M104,48 C104,46 100,44.5 98,44.5 L98,51.5 C100,51.5 104,50 104,48 Z" opacity="0.9"/>
+      <circle cx="105" cy="48" r="1.5" fill="#4ade80"/>
+      <path fill="#cbd5e1" opacity="0.85" d="M76,44 L78,34 L68,34 L66,44 Z"/>
+      <path fill="#a78bfa" opacity="0.8" d="M48,44 L46,30 L42,30 L42,44 Z"/>
+    </g>
+  </g>
+  <text x="70" y="88" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="900">NOSE ▼</text>
+</svg>
+</div>
+
+<div class="card"><h3>6. Nose Up</h3>
+<svg viewBox="0 0 140 100">
+  <line x1="8" y1="90" x2="132" y2="90" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <!-- rotate(-90) = CCW = nose goes UP -->
+  <g transform="rotate(-90, 70, 48)">
+    <g>
+      <path fill="#cbd5e1" d="
+        M104,48 C104,46 100,44 94,44 L52,44 L48,44 L48,30 L42,30 L40,44 L36,45 L36,51
+        L40,52 L48,52 L52,52 L94,52 C100,52 104,50 104,48 Z
+      "/>
+      <path fill="#4ade80" d="M104,48 C104,46 100,44.5 98,44.5 L98,51.5 C100,51.5 104,50 104,48 Z" opacity="0.9"/>
+      <circle cx="105" cy="48" r="1.5" fill="#4ade80"/>
+      <path fill="#cbd5e1" opacity="0.85" d="M76,44 L78,34 L68,34 L66,44 Z"/>
+      <path fill="#a78bfa" opacity="0.8" d="M48,44 L46,30 L42,30 L42,44 Z"/>
+    </g>
+  </g>
+  <text x="70" y="14" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="900">NOSE ▲</text>
+</svg>
+</div>
+
+</div>
+
+</body>
+</html>
