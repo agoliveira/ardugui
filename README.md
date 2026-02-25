@@ -93,7 +93,7 @@ Currently includes detailed definitions for popular boards like Pixhawk 6X/6C, M
 ### Install
 
 ```bash
-git clone https://github.com/adilsoncruzjr/ardugui.git
+git clone https://github.com/agoliveira/ardugui.git
 cd ardugui
 npm install
 ```

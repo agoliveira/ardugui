@@ -2,15 +2,18 @@
   "name": "ardugui",
   "version": "0.1.0",
   "description": "INAV Configurator-style GUI for ArduPilot",
-  "author": "ArduGUI Contributors",
+  "author": {
+    "name": "ArduGUI Contributors",
+    "email": "ardugui@users.noreply.github.com"
+  },
   "license": "GPL-3.0",
-  "homepage": "https://github.com/adilsoncruzjr/ardugui",
+  "homepage": "https://github.com/agoliveira/ardugui",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adilsoncruzjr/ardugui.git"
+    "url": "https://github.com/agoliveira/ardugui.git"
   },
   "bugs": {
-    "url": "https://github.com/adilsoncruzjr/ardugui/issues"
+    "url": "https://github.com/agoliveira/ardugui/issues"
   },
   "keywords": [
     "ardupilot",

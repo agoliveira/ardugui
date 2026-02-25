@@ -19,7 +19,7 @@ Thank you for your interest in contributing. ArduGUI is in early development, an
 ### Getting Running
 
 ```bash
-git clone https://github.com/adilsoncruzjr/ardugui.git
+git clone https://github.com/agoliveira/ardugui.git
 cd ardugui
 npm install
 

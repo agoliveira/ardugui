@@ -47,15 +47,11 @@ jobs:
 
       - name: Package -- Linux
         if: matrix.platform == 'linux'
-        run: npx electron-builder --linux AppImage deb
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux AppImage deb --publish never
 
       - name: Package -- Windows
         if: matrix.platform == 'win'
-        run: npx electron-builder --win nsis
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
