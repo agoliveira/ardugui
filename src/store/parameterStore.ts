@@ -33,6 +33,7 @@ export interface ParameterState {
   setParameter: (entry: ParameterEntry) => void;
   setParameters: (entries: ParameterEntry[]) => void;
   setParamLocal: (name: string, value: number) => void;
+  stageParams: (entries: Record<string, number>) => void;
   clearDirty: (name: string) => void;
   clearAllDirty: () => void;
   revertAll: () => void;
@@ -70,6 +71,20 @@ export const useParameterStore = create<ParameterState>((set) => ({
       if (original && original.value === value) {
         dirty.delete(name);
       } else {
+        dirty.set(name, value);
+      }
+      return { dirtyParams: dirty };
+    }),
+
+  /**
+   * Stage multiple params as dirty unconditionally.
+   * Unlike setParamLocal, this does NOT skip values that match the FC original.
+   * Used by Apply-style operations where the user's intent is explicit.
+   */
+  stageParams: (entries: Record<string, number>) =>
+    set((state) => {
+      const dirty = new Map(state.dirtyParams);
+      for (const [name, value] of Object.entries(entries)) {
         dirty.set(name, value);
       }
       return { dirtyParams: dirty };

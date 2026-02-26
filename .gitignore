@@ -35,3 +35,4 @@ tools/ardupilot/
 # Blender exports
 *_blender.*
 *_for_blender.*
+.wget-hsts.wget-hsts

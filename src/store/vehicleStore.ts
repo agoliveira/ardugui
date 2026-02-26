@@ -44,12 +44,12 @@ export const useVehicleStore = create<VehicleState>((set) => ({
  */
 export function getVisiblePages(
   type: VehicleType,
-  options?: { hasOsd?: boolean }
+  options?: { hasOsd?: boolean; expertMode?: boolean }
 ): string[] {
   // After connection: full sidebar
   const common = [
     'connect',    // was 'setup' -- board info + connection
-    'frame',      // frame wizard
+    'frame',      // frame configuration
     'ports',
     'configuration',
     'receiver',
@@ -57,10 +57,13 @@ export function getVisiblePages(
   ];
 
   const hasOsd = options?.hasOsd ?? false;
+  const expertMode = options?.expertMode ?? false;
   const tail = [
     'failsafes',
     ...(hasOsd ? ['osd'] as string[] : []),
+    'backups',
     'cli',
+    ...(expertMode ? ['expert'] as string[] : []),
   ];
 
   switch (type) {
@@ -69,7 +72,9 @@ export function getVisiblePages(
     case 'plane':
       return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation', ...tail];
     case 'quadplane':
-      return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation', ...tail.slice(0, -1), 'transitions', 'cli'];
+      return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation',
+        'failsafes', ...(hasOsd ? ['osd'] as string[] : []), 'transitions',
+        'backups', 'cli', ...(expertMode ? ['expert'] as string[] : [])];
     default:
       // Not connected: only the connect page
       return ['connect'];

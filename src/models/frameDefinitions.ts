@@ -78,11 +78,9 @@ const LAYOUTS: Record<string, FrameLayout> = {
     name: 'Quad +',
     motors: [
       { number: 1, x: 0, y: 1, rotation: 'CCW' },    // Front
-      { number: 2, x: 1, y: 0, rotation: 'CCW' },    // Right
+      { number: 2, x: 1, y: 0, rotation: 'CW' },     // Right
       { number: 3, x: 0, y: -1, rotation: 'CCW' },   // Back
-      { number: 4, x: -1, y: 0, rotation: 'CCW' },   // Left
-      // Note: 1,3 = CCW; 2,4 = CW in reality but ArduPilot docs show:
-      // 1=Front(CCW), 2=Right(CW), 3=Back(CCW), 4=Left(CW)
+      { number: 4, x: -1, y: 0, rotation: 'CW' },    // Left
     ],
   },
 
@@ -112,10 +110,10 @@ const LAYOUTS: Record<string, FrameLayout> = {
   '1-3': {
     name: 'Quad H',
     motors: [
-      { number: 1, x: 0.7, y: 0.7, rotation: 'CCW' },
-      { number: 2, x: -0.7, y: -0.7, rotation: 'CCW' },
-      { number: 3, x: 0.7, y: -0.7, rotation: 'CW' },
-      { number: 4, x: -0.7, y: 0.7, rotation: 'CW' },
+      { number: 1, x: 0.6, y: 1.0, rotation: 'CCW' },   // Front-Right
+      { number: 2, x: -0.6, y: -1.0, rotation: 'CCW' },  // Back-Left
+      { number: 3, x: 0.6, y: -1.0, rotation: 'CW' },    // Back-Right
+      { number: 4, x: -0.6, y: 1.0, rotation: 'CW' },    // Front-Left
     ],
   },
 
@@ -194,6 +192,36 @@ const LAYOUTS: Record<string, FrameLayout> = {
       { number: 6, x: -0.92, y: -0.38, rotation: 'CCW' },
       { number: 7, x: -0.92, y: 0.38, rotation: 'CW' },
       { number: 8, x: -0.38, y: 0.92, rotation: 'CCW' },
+    ],
+  },
+
+  // --- OctaQuad X (4 arms, coaxial pairs) ---
+  '4-1': {
+    name: 'OctaQuad X',
+    motors: [
+      { number: 1, x: 0.7, y: 0.7, rotation: 'CCW' },   // Front-Right top
+      { number: 2, x: -0.7, y: -0.7, rotation: 'CCW' },  // Back-Left top
+      { number: 3, x: 0.7, y: -0.7, rotation: 'CW' },    // Back-Right top
+      { number: 4, x: -0.7, y: 0.7, rotation: 'CW' },    // Front-Left top
+      { number: 5, x: 0.7, y: 0.7, rotation: 'CW' },     // Front-Right bottom
+      { number: 6, x: -0.7, y: -0.7, rotation: 'CW' },   // Back-Left bottom
+      { number: 7, x: 0.7, y: -0.7, rotation: 'CCW' },   // Back-Right bottom
+      { number: 8, x: -0.7, y: 0.7, rotation: 'CCW' },   // Front-Left bottom
+    ],
+  },
+
+  // --- OctaQuad H (4 arms, coaxial, H-frame) ---
+  '4-3': {
+    name: 'OctaQuad H',
+    motors: [
+      { number: 1, x: 0.6, y: 1.0, rotation: 'CCW' },   // Front-Right top
+      { number: 2, x: -0.6, y: -1.0, rotation: 'CCW' },  // Back-Left top
+      { number: 3, x: 0.6, y: -1.0, rotation: 'CW' },    // Back-Right top
+      { number: 4, x: -0.6, y: 1.0, rotation: 'CW' },    // Front-Left top
+      { number: 5, x: 0.6, y: 1.0, rotation: 'CW' },     // Front-Right bottom
+      { number: 6, x: -0.6, y: -1.0, rotation: 'CW' },   // Back-Left bottom
+      { number: 7, x: 0.6, y: -1.0, rotation: 'CCW' },   // Back-Right bottom
+      { number: 8, x: -0.6, y: 1.0, rotation: 'CCW' },   // Front-Left bottom
     ],
   },
 

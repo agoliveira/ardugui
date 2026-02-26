@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Terminal } from 'lucide-react';
+import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench } from 'lucide-react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
@@ -9,7 +9,6 @@ import { HealthBar } from '@/components/HealthBar';
 export function Header() {
   const status = useConnectionStore((s) => s.status);
   const portPath = useConnectionStore((s) => s.portPath);
-  const progress = useConnectionStore((s) => s.paramLoadProgress);
   const vehicleType = useVehicleStore((s) => s.type);
   const firmwareType = useVehicleStore((s) => s.firmwareType);
   const firmwareVersion = useVehicleStore((s) => s.firmwareVersion);
@@ -24,51 +23,42 @@ export function Header() {
   const handleDisconnect = async () => { await connectionManager.disconnect(); };
 
   return (
-    <header className="flex h-16 items-center border-b border-border bg-surface-0 px-5 gap-4">
-      {/* Left: connection info */}
-      <div className="flex items-center gap-3">
+    <header className="flex h-10 items-center border-b border-border bg-surface-0 px-3 gap-2 text-[12px]">
+      {/* Left: connection */}
+      <div className="flex items-center gap-2">
         {isConnected ? (
-          <Wifi size={18} className="text-success" />
+          <Wifi size={14} className="text-success" />
         ) : isConnecting ? (
-          <Loader2 size={18} className="animate-spin text-accent" />
+          <Loader2 size={14} className="animate-spin text-accent" />
         ) : (
-          <WifiOff size={18} className="text-subtle" />
+          <WifiOff size={14} className="text-subtle" />
         )}
-        <span className="text-[15px] font-semibold text-muted">
-          {isConnected ? portPath : isConnecting ? 'Connecting…' : 'Disconnected'}
+        <span className="font-medium text-muted">
+          {isConnected ? portPath : isConnecting ? 'Connecting...' : 'Disconnected'}
         </span>
 
         {(isConnected || isConnecting) && (
           <button onClick={handleDisconnect}
-            className="btn btn-ghost h-8 px-3 text-[13px]"
+            className="btn btn-ghost h-6 px-2 text-[11px]"
             title="Disconnect">
-            <Unplug size={14} /> Disconnect
+            <Unplug size={12} />
           </button>
-        )}
-
-        {status === 'loading' && progress && (
-          <div className="flex items-center gap-2.5">
-            <div className="h-2.5 w-40 overflow-hidden rounded-full bg-surface-2">
-              <div className="h-full rounded-full bg-accent transition-all duration-200"
-                style={{ width: `${(progress.received / Math.max(1, progress.total)) * 100}%` }} />
-            </div>
-            <span className="font-mono text-sm font-bold tabular-nums text-accent">
-              {progress.received}/{progress.total}
-            </span>
-          </div>
         )}
       </div>
 
-      <div className="flex-1" />
-
-      {/* Center: vehicle type */}
+      {/* Separator */}
       {(isConnected || isConnecting) && vehicleType && (
-        <div className="flex items-center gap-3">
-          <span className="rounded-lg bg-accent/20 border border-accent/40 px-5 py-1.5 text-sm font-extrabold uppercase tracking-[0.15em] text-accent">
+        <div className="mx-1 h-4 w-px bg-border" />
+      )}
+
+      {/* Vehicle type badge */}
+      {(isConnected || isConnecting) && vehicleType && (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-surface-2 border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
             {vehicleType}
           </span>
           {firmwareType && firmwareVersion && (
-            <span className="text-[15px] font-medium text-muted">
+            <span className="text-[11px] font-medium text-subtle">
               {firmwareType} {firmwareVersion}
             </span>
           )}
@@ -77,41 +67,47 @@ export function Header() {
 
       <div className="flex-1" />
 
-      {/* Right: telemetry */}
-      <div className="flex items-center gap-5">
+      {/* Telemetry -- inline, compact */}
+      <div className="flex items-center gap-3">
         {isConnected && <HealthBar />}
 
         {battery && (
-          <div className="flex items-center gap-2">
-            <span className={`font-mono text-[16px] font-bold tabular-nums ${
+          <div className="flex items-center gap-1.5 font-mono text-[12px] tabular-nums">
+            <span className={`font-bold ${
               battery.voltage < 10.5 ? 'text-danger' : 'text-foreground'
             }`}>
               {battery.voltage.toFixed(1)}V
             </span>
-            <span className="font-mono text-[15px] font-medium tabular-nums text-muted">
+            <span className="font-medium text-muted">
               {battery.current.toFixed(1)}A
             </span>
           </div>
         )}
 
         {isConnected && (
-          <div className={`badge ${
-            armed
-              ? 'bg-danger-muted/60 text-danger border border-danger/40'
-              : 'bg-success-muted/60 text-success border border-success/40'
-          }`}>
-            {armed ? <><Shield size={13} /> ARMED</> : <><ShieldOff size={13} /> DISARMED</>}
-          </div>
+          <>
+            <div className="h-4 w-px bg-border" />
+            <div className={`badge ${
+              armed
+                ? 'bg-danger-muted/60 text-danger border border-danger/30'
+                : 'bg-success-muted/60 text-success border border-success/30'
+            }`}>
+              {armed ? <><Shield size={11} /> ARMED</> : <><ShieldOff size={11} /> DISARMED</>}
+            </div>
+          </>
         )}
 
         {isConnected && (
-          <button onClick={toggleDebug}
-            className={`flex h-9 items-center gap-2 rounded-lg px-3 text-[13px] font-bold transition-colors ${
-              debugEnabled ? 'bg-accent/20 text-accent' : 'text-subtle hover:bg-surface-2 hover:text-muted'
-            }`}
-            title={debugEnabled ? 'Close debug console' : 'Open debug console'}>
-            <Terminal size={16} /> DEV
-          </button>
+          <>
+            <div className="h-4 w-px bg-border" />
+            <button onClick={toggleDebug}
+              className={`flex h-6 items-center gap-1 rounded px-2 text-[11px] font-bold transition-colors ${
+                debugEnabled ? 'bg-accent/15 text-accent' : 'text-subtle hover:bg-surface-2 hover:text-muted'
+              }`}
+              title={debugEnabled ? 'Disable expert mode' : 'Enable expert mode'}>
+              <Wrench size={13} />
+            </button>
+          </>
         )}
       </div>
     </header>

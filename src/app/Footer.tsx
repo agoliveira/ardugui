@@ -9,6 +9,8 @@ export function Footer() {
   const dirtyCount = useParameterStore((s) => s.dirtyParams.size);
   const revertAll = useParameterStore((s) => s.revertAll);
   const isConnected = useConnectionStore((s) => s.status === 'connected');
+  const portPath = useConnectionStore((s) => s.portPath);
+  const baudRate = useConnectionStore((s) => s.baudRate);
   const armed = useVehicleStore((s) => s.armed);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
@@ -21,33 +23,43 @@ export function Footer() {
 
   return (
     <>
-      <footer className="flex h-12 items-center border-t border-border bg-surface-0 px-5">
-        <div className="flex items-center gap-3">
+      <footer className="flex h-9 items-center border-t border-border bg-surface-0 px-3 text-[11px]">
+        <div className="flex items-center gap-2">
           <button disabled={!canSave} onClick={() => setShowSaveDialog(true)}
-            className="btn btn-primary h-8 px-4 text-[13px]">
-            <Save size={14} /> Save to FC
+            className="btn btn-primary h-6 px-3 text-[11px]">
+            <Save size={13} /> Save
           </button>
           <button disabled={!hasDirty} onClick={handleRevert}
-            className="btn btn-ghost h-8 px-4 text-[13px]">
-            <RotateCcw size={14} /> Revert
+            className="btn btn-ghost h-6 px-2 text-[11px]">
+            <RotateCcw size={12} />
           </button>
         </div>
 
         {hasDirty && (
-          <div className="ml-5 flex items-center gap-2 text-[15px] font-bold text-warning">
-            <AlertTriangle size={16} />
-            {dirtyCount} unsaved change{dirtyCount !== 1 ? 's' : ''}
+          <div className="ml-3 flex items-center gap-1.5 font-semibold text-warning">
+            <AlertTriangle size={12} />
+            {dirtyCount} unsaved
           </div>
         )}
 
         {armed && hasDirty && (
-          <div className="ml-5 text-[15px] font-bold text-danger">
+          <span className="ml-3 font-semibold text-danger">
             ARMED -- writes disabled
-          </div>
+          </span>
         )}
 
         <div className="flex-1" />
-        <div className="text-sm text-subtle">{isConnected ? 'Connected' : 'Ready'}</div>
+
+        {isConnected && portPath && (
+          <div className="flex items-center gap-1.5 text-subtle">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+            <span className="font-mono">{portPath}</span>
+            {baudRate && <span className="font-mono">@ {baudRate}</span>}
+          </div>
+        )}
+        {!isConnected && (
+          <span className="text-subtle">Ready</span>
+        )}
       </footer>
 
       {showSaveDialog && <SaveDialog onClose={() => setShowSaveDialog(false)} />}

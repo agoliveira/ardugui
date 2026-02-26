@@ -142,7 +142,7 @@ export function ModesPage() {
       {/* Active mode info */}
       {currentPwm > 0 && activeSlot >= 0 && (
         <div
-          className="rounded-lg border-l-4 p-4"
+          className="rounded border-l-4 p-4"
           style={{
             borderColor: assignedModes[activeSlot].color,
             backgroundColor: assignedModes[activeSlot].color + '10',
@@ -207,7 +207,7 @@ function ModeRangeBar({
       </div>
 
       {/* Range bar */}
-      <div className="relative h-12 overflow-hidden rounded-lg bg-surface-0 border border-border">
+      <div className="relative h-12 overflow-hidden rounded bg-surface-0 border border-border">
         {MODE_PWM_RANGES.map((range, index) => {
           const mode = assignedModes[index];
           const leftPwm = Math.max(range.min, PWM_DISPLAY_MIN);
@@ -288,7 +288,7 @@ function ModeSlot({
 }) {
   return (
     <div
-      className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-all duration-150 ${
+      className={`flex items-center gap-4 rounded px-4 py-3 transition-all duration-150 ${
         isActive
           ? 'bg-surface-2 ring-1 ring-accent/50'
           : 'bg-surface-0 hover:bg-surface-1'

@@ -47,7 +47,7 @@ function ConfigGroup({ group }: { group: ParamGroup }) {
           hover:bg-surface-2/50"
         style={{ background: expanded ? 'linear-gradient(90deg, rgba(245,158,11,0.08), transparent 60%)' : undefined }}
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
+        <div className="flex h-11 w-11 items-center justify-center rounded bg-accent/15">
           <Icon size={22} className="text-accent" />
         </div>
         <div className="flex-1 min-w-0">

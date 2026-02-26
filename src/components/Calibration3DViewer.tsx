@@ -150,9 +150,9 @@ function colorizeCopter(mat: THREE.MeshStandardMaterial) {
     mat.roughness = 0.3;
     return;
   }
-  // Yellow forward marker [252,184,0] solid → amber accent
+  // Marigold forward marker [255,170,42] solid → accent color
   if (r > 0.8 && g > 0.5 && b < 0.1 && mat.opacity > 0.9) {
-    mat.color.setRGB(0.96, 0.65, 0.0);
+    mat.color.setRGB(1.0, 0.67, 0.16);
     mat.emissive = new THREE.Color(0.3, 0.2, 0.0);
     return;
   }
@@ -309,7 +309,7 @@ export function Calibration3DViewer({ position, vehicleType, className }: Calibr
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x0c1424);
+    renderer.setClearColor(0x13120f);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.4;
@@ -490,7 +490,7 @@ export function CalibrationPositionGrid({
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(W, H);
       renderer.setPixelRatio(1); // Keep it light
-      renderer.setClearColor(0x0c1424);
+      renderer.setClearColor(0x13120f);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.4;
@@ -544,7 +544,7 @@ export function CalibrationPositionGrid({
         return (
           <div
             key={pos}
-            className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+            className={`relative rounded overflow-hidden border-2 transition-all ${
               isCurrent
                 ? 'border-accent ring-2 ring-accent/30'
                 : isCompleted
@@ -565,7 +565,7 @@ export function CalibrationPositionGrid({
             </div>
 
             {/* Image */}
-            <div className={`aspect-[16/10] bg-[#0c1424] ${!isCompleted && !isCurrent ? 'opacity-40' : ''}`}>
+            <div className={`aspect-[16/10] bg-[#13120f] ${!isCompleted && !isCurrent ? 'opacity-40' : ''}`}>
               {img && (
                 <img
                   src={img}

@@ -117,7 +117,7 @@ export function HealthBar() {
       {/* ── Sensor pill row ────────────────────────────────────────────── */}
       <div
         ref={barRef}
-        className="flex cursor-pointer items-center gap-1.5 rounded-xl px-1 py-0.5 transition-colors hover:bg-surface-2/40"
+        className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:bg-surface-2/40"
         onClick={() => setShowPanel((prev) => !prev)}
         title="Sensor health -- click for details"
       >
@@ -128,7 +128,7 @@ export function HealthBar() {
           return (
             <div
               key={sensor.bit}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5
+              className={`flex items-center gap-1.5 rounded border px-2.5 py-1.5
                 ${style.bg} ${style.text} ${style.border}
                 ${style.pulse ? 'animate-pulse' : ''}
               `}
@@ -151,19 +151,19 @@ export function HealthBar() {
       {showPanel && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-full z-50 mt-2 min-w-[400px] rounded-xl border border-border bg-surface-0 shadow-2xl shadow-black/40"
+          className="absolute right-0 top-full z-50 mt-2 min-w-[400px] rounded border border-border bg-surface-0 shadow-2xl shadow-black/40"
         >
           <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <div className="flex items-center gap-4">
               <span className="text-base font-bold text-foreground">Sensor Health</span>
-              <span className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1 text-sm font-medium text-muted">
+              <span className="flex items-center gap-1.5 rounded bg-surface-2 px-3 py-1 text-sm font-medium text-muted">
                 <Cpu size={14} />
                 CPU {(cpuLoad / 10).toFixed(1)}%
               </span>
             </div>
             <button
               onClick={() => setShowPanel(false)}
-              className="rounded-lg p-1.5 text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
+              className="rounded p-1.5 text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
             >
               <X size={18} />
             </button>
@@ -184,9 +184,9 @@ export function HealthBar() {
               return (
                 <div
                   key={sensor.bit}
-                  className="flex items-center gap-3.5 rounded-lg px-3.5 py-3 hover:bg-surface-1 transition-colors"
+                  className="flex items-center gap-3.5 rounded px-3.5 py-3 hover:bg-surface-1 transition-colors"
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.bg} border ${style.border}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded ${style.bg} border ${style.border}`}>
                     <Icon size={20} strokeWidth={2} className={style.text} />
                   </div>
                   <div className="flex-1 min-w-0">

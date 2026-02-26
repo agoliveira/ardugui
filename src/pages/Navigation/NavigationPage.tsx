@@ -58,7 +58,7 @@ function NavGroup({ group }: { group: ParamGroup }) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-surface-2/50"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded bg-accent/10">
           <Icon size={24} className="text-accent" />
         </div>
         <div className="flex-1">

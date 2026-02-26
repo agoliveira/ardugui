@@ -255,7 +255,7 @@ function AccelCalibrationCard() {
     <div className="card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded bg-accent/10">
           <Crosshair size={24} className="text-accent" />
         </div>
         <div className="flex-1">
@@ -276,7 +276,7 @@ function AccelCalibrationCard() {
         )}
 
         {accelState === 'done' && (
-          <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 rounded bg-green-500/10 px-3.5 py-2.5">
             <CheckCircle2 size={14} className="text-green-400 shrink-0" />
             <p className="text-[13px] text-green-200 leading-relaxed">
               Accelerometer calibration successful!
@@ -285,7 +285,7 @@ function AccelCalibrationCard() {
         )}
 
         {accelState === 'failed' && (
-          <div className="flex items-start gap-2 rounded-lg bg-red-500/10 px-3.5 py-2.5">
+          <div className="flex items-start gap-2 rounded bg-red-500/10 px-3.5 py-2.5">
             <XCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
             <p className="text-[13px] text-red-200 leading-relaxed">
               Calibration failed. Ensure the vehicle was held completely still in each position.
@@ -315,7 +315,7 @@ function AccelCalibrationCard() {
         )}
 
         {accelState === 'starting' && (
-          <div className="flex items-center gap-3 rounded-lg bg-surface-1 px-4 py-3">
+          <div className="flex items-center gap-3 rounded bg-surface-1 px-4 py-3">
             <Loader2 size={16} className="text-accent animate-spin" />
             <p className="text-base text-muted">
               Starting calibration… waiting for flight controller.
@@ -362,7 +362,7 @@ function CalibrationFlashcard({
   const isSampling = accelState === 'sampling';
 
   return (
-    <div className={`rounded-xl border-2 px-6 py-5 transition-all ${
+    <div className={`rounded border-2 px-6 py-5 transition-all ${
       isWaiting
         ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
         : 'border-accent/40 bg-accent/5'
@@ -410,8 +410,8 @@ function CalibrationFlashcard({
 
         {samplingStalled && (
           <div className="flex items-center justify-center gap-3 pt-1">
-            <AlertTriangle size={14} className="text-amber-400 shrink-0" />
-            <p className="text-[13px] text-amber-200">
+            <AlertTriangle size={14} className="text-accent shrink-0" />
+            <p className="text-[13px] text-accent">
               FC hasn't advanced -- confirm may not have been received.
             </p>
             <button onClick={onRetryConfirm} className="btn btn-ghost text-[13px] px-3 py-1">
@@ -464,7 +464,7 @@ function CompassCalibrationCard() {
   return (
     <div className="card overflow-hidden">
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+        <div className={`flex h-12 w-12 items-center justify-center rounded ${
           compassStatus.present ? 'bg-accent/10' : 'bg-surface-2'
         }`}>
           <Compass size={16} className={compassStatus.present ? 'text-accent' : 'text-subtle'} />
@@ -484,7 +484,7 @@ function CompassCalibrationCard() {
 
       <div className="p-6 space-y-5">
         {!compassStatus.present && (
-          <div className="flex items-start gap-2 rounded-lg bg-surface-1 px-3.5 py-2.5">
+          <div className="flex items-start gap-2 rounded bg-surface-1 px-3.5 py-2.5">
             <Info size={14} className="text-subtle mt-0.5 shrink-0" />
             <p className="text-[13px] text-muted leading-relaxed">
               The SYS_STATUS bitmask reports no magnetometer hardware present.
@@ -521,9 +521,9 @@ function CompassCalibrationCard() {
 
             {isRunning && (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3.5 py-2.5">
-                  <RotateCcw size={14} className="text-amber-400 mt-0.5 shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
-                  <p className="text-[13px] text-amber-200 leading-relaxed">
+                <div className="flex items-start gap-2 rounded bg-accent/10 px-3.5 py-2.5">
+                  <RotateCcw size={14} className="text-accent mt-0.5 shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
+                  <p className="text-[13px] text-accent leading-relaxed">
                     Slowly rotate the vehicle through all orientations -- roll, pitch, and yaw.
                     Think of tracing every point on the surface of a sphere.
                   </p>
@@ -549,7 +549,7 @@ function CompassCalibrationCard() {
 
             {isDone && (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 rounded-lg bg-green-500/10 px-3.5 py-2.5">
+                <div className="flex items-start gap-2 rounded bg-green-500/10 px-3.5 py-2.5">
                   <Check size={14} className="text-green-400 mt-0.5 shrink-0" />
                   <p className="text-[13px] text-green-200 leading-relaxed">
                     Compass calibration successful! Results auto-saved. A reboot is recommended.
@@ -566,7 +566,7 @@ function CompassCalibrationCard() {
 
             {isFailed && (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 rounded-lg bg-red-500/10 px-3.5 py-2.5">
+                <div className="flex items-start gap-2 rounded bg-red-500/10 px-3.5 py-2.5">
                   <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
                   <p className="text-[13px] text-red-200 leading-relaxed">
                     Compass calibration failed. Try again in a different location, away from
@@ -633,7 +633,7 @@ function CompassResultRow({ compassId, report }: {
     report.calStatus === MagCalStatus.BAD_RADIUS ? 'Bad radius' : 'Failed';
 
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-surface-1 px-3.5 py-2.5">
+    <div className="flex items-center gap-3 rounded bg-surface-1 px-3.5 py-2.5">
       {success ? <CheckCircle2 size={16} className="text-green-400 shrink-0" /> : <XCircle size={16} className="text-red-400 shrink-0" />}
       <div className="flex-1 text-[13px]">
         <span className="font-medium text-foreground">Compass {compassId + 1}</span>
@@ -655,8 +655,8 @@ function CalStatusBadge({ calibrated, activeState }: { calibrated: boolean; acti
   }
   if (activeState !== 'idle' && activeState !== 'done' && activeState !== 'failed') {
     return (
-      <span className="flex items-center gap-1.5 text-[13px] font-medium text-amber-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" /> Calibrating
+      <span className="flex items-center gap-1.5 text-[13px] font-medium text-accent">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> Calibrating
       </span>
     );
   }
@@ -666,7 +666,7 @@ function CalStatusBadge({ calibrated, activeState }: { calibrated: boolean; acti
   if (calibrated) {
     return <span className="flex items-center gap-1.5 text-[13px] font-medium text-green-400"><Check size={12} /> Calibrated</span>;
   }
-  return <span className="flex items-center gap-1.5 text-[13px] font-medium text-amber-400"><AlertTriangle size={12} /> Not calibrated</span>;
+  return <span className="flex items-center gap-1.5 text-[13px] font-medium text-accent"><AlertTriangle size={12} /> Not calibrated</span>;
 }
 
 function CalStatusBanner({ calibrated, calibratedText, uncalibratedText }: {
@@ -674,16 +674,16 @@ function CalStatusBanner({ calibrated, calibratedText, uncalibratedText }: {
 }) {
   if (calibrated) {
     return (
-      <div className="flex items-start gap-2 rounded-lg bg-green-500/10 px-3.5 py-2.5">
+      <div className="flex items-start gap-2 rounded bg-green-500/10 px-3.5 py-2.5">
         <CheckCircle2 size={14} className="text-green-400 mt-0.5 shrink-0" />
         <p className="text-[13px] text-green-200 leading-relaxed">{calibratedText}</p>
       </div>
     );
   }
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3.5 py-2.5">
-      <AlertTriangle size={14} className="text-amber-400 mt-0.5 shrink-0" />
-      <p className="text-[13px] text-amber-200 leading-relaxed">{uncalibratedText}</p>
+    <div className="flex items-start gap-2 rounded bg-accent/10 px-3.5 py-2.5">
+      <AlertTriangle size={14} className="text-accent mt-0.5 shrink-0" />
+      <p className="text-[13px] text-accent leading-relaxed">{uncalibratedText}</p>
     </div>
   );
 }
@@ -712,7 +712,7 @@ function LevelTrimCard() {
   return (
     <div className="card overflow-hidden">
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded bg-accent/10">
           <MoveHorizontal size={16} className="text-accent" />
         </div>
         <div className="flex-1">
@@ -771,7 +771,7 @@ function RebootCard() {
   return (
     <div className="card overflow-hidden">
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded bg-red-500/10">
           <Power size={16} className="text-red-400" />
         </div>
         <div className="flex-1">

@@ -36,4 +36,46 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // DevTools
   toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
+
+  // Parameter database
+  db: {
+    // Aircraft
+    getAircraft: (id: string) => ipcRenderer.invoke('db:get-aircraft', id),
+    listAircraft: () => ipcRenderer.invoke('db:list-aircraft'),
+    upsertAircraft: (data: { id: string; name: string; board_type?: string | null; vehicle_type?: string | null; firmware_version?: string | null }) =>
+      ipcRenderer.invoke('db:upsert-aircraft', data),
+    renameAircraft: (id: string, name: string) =>
+      ipcRenderer.invoke('db:rename-aircraft', id, name),
+    deleteAircraft: (id: string) =>
+      ipcRenderer.invoke('db:delete-aircraft', id),
+
+    // Snapshots
+    createSnapshot: (aircraftId: string, label: string, source: 'auto' | 'manual' | 'import', params: { name: string; value: number; type: string | null }[]) =>
+      ipcRenderer.invoke('db:create-snapshot', aircraftId, label, source, params),
+    listSnapshots: (aircraftId: string) =>
+      ipcRenderer.invoke('db:list-snapshots', aircraftId),
+    getSnapshotParams: (snapshotId: number) =>
+      ipcRenderer.invoke('db:get-snapshot-params', snapshotId),
+    renameSnapshot: (snapshotId: number, label: string) =>
+      ipcRenderer.invoke('db:rename-snapshot', snapshotId, label),
+    deleteSnapshot: (snapshotId: number) =>
+      ipcRenderer.invoke('db:delete-snapshot', snapshotId),
+
+    // Diff
+    diffSnapshots: (idA: number, idB: number) =>
+      ipcRenderer.invoke('db:diff-snapshots', idA, idB),
+    diffSnapshotVsCurrent: (snapshotId: number, currentParams: { name: string; value: number; type: string | null }[]) =>
+      ipcRenderer.invoke('db:diff-snapshot-vs-current', snapshotId, currentParams),
+
+    // Import / Export
+    exportParamFile: (snapshotId: number) =>
+      ipcRenderer.invoke('db:export-param-file', snapshotId),
+    importParamFile: (aircraftId: string, label: string, content: string) =>
+      ipcRenderer.invoke('db:import-param-file', aircraftId, label, content),
+
+    // Preferences
+    getPreference: (key: string) => ipcRenderer.invoke('db:get-preference', key),
+    setPreference: (key: string, value: string) =>
+      ipcRenderer.invoke('db:set-preference', key, value),
+  },
 });

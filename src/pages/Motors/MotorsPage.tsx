@@ -20,8 +20,231 @@ import {
   SERVO_FUNCTIONS,
   type MotorDef,
 } from '@/models/frameDefinitions';
-import { CopterMotorDiagram, PlaneServoDiagram } from '@/components/VehicleGraphics';
 import { useDetectedPreset } from '@/hooks/useDetectedPreset';
+import { AirframeIcon, AIRFRAME_VIEWBOX, QUAD } from '@/components/AirframeIcons';
+
+const V = AIRFRAME_VIEWBOX;
+
+// ── Colors (shared with VehicleGraphics calibration views) ──────────────
+
+const MC = {
+  ccw: '#38bdf8',
+  cw: '#fb7185',
+  nose: '#4ade80',
+  neutral: '#cbd5e1',
+  bg: '#13120f',
+  bgStroke: '#2a2622',
+  port: '#ffaa2a',
+  starboard: '#22d3ee',
+  bodyDim: '#94a3b8',
+};
+
+
+// ============================================================
+// Copter Motor Diagram -- AirframeIcon base + interactive overlay
+// ============================================================
+
+function CopterMotorOverlay({
+  motors, testingMotor, enabled, onMotorClick,
+}: {
+  motors: MotorDef[];
+  testingMotor: number | null;
+  enabled: boolean;
+  onMotorClick: (n: number) => void;
+}) {
+  const { cx, cy } = QUAD;
+
+  // Scale by unique arm positions, not total motor count (coaxial frames)
+  const armPositions = new Set(motors.map(m => `${m.x.toFixed(3)},${m.y.toFixed(3)}`));
+  const arms = armPositions.size;
+  const scale = arms <= 4
+    ? { r: 10, arm: 32 }
+    : arms <= 6
+      ? { r: 8, arm: 36 }
+      : { r: 6, arm: 38 };
+
+  // Detect coaxial pairs (same x,y position) -- offset bottom motors outward
+  const posKey = (m: MotorDef) => `${m.x.toFixed(3)},${m.y.toFixed(3)}`;
+  const posGroups = new Map<string, number[]>();
+  motors.forEach((m, i) => {
+    const k = posKey(m);
+    if (!posGroups.has(k)) posGroups.set(k, []);
+    posGroups.get(k)!.push(i);
+  });
+  const coaxialOffset = scale.r * 0.45;
+
+  return (
+    <>
+      {motors.map((m, idx) => {
+        let mx = cx + m.x * scale.arm;
+        let my = cy - m.y * scale.arm;
+
+        // Offset bottom coaxial motor outward from center
+        const k = posKey(m);
+        const group = posGroups.get(k)!;
+        const isBottom = group.length >= 2 && idx === group[1];
+        if (isBottom) {
+          const dx = mx - cx;
+          const dy = my - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          mx += (dx / dist) * coaxialOffset;
+          my += (dy / dist) * coaxialOffset;
+        }
+
+        const isTesting = testingMotor === m.number;
+        const color = isTesting ? '#ffcc66' : m.rotation === 'CCW' ? MC.ccw : MC.cw;
+        const dimmed = !enabled && !isTesting;
+        const r = scale.r;
+        const isCW = m.rotation === 'CW';
+
+        // Rotation arrow arc
+        const arcR = r - 2;
+        const startAngle = isCW ? -100 : 100;
+        const endAngle = isCW ? 100 : -100;
+        const sa = (startAngle * Math.PI) / 180;
+        const ea = (endAngle * Math.PI) / 180;
+        const sx = mx + arcR * Math.cos(sa);
+        const sy = my + arcR * Math.sin(sa);
+        const ex = mx + arcR * Math.cos(ea);
+        const ey = my + arcR * Math.sin(ea);
+        const sweepFlag = isCW ? 1 : 0;
+
+        const tipAngle = ea + (isCW ? 0.3 : -0.3);
+        const baseAngle1 = ea - (isCW ? 0.15 : -0.15);
+        const baseAngle2 = ea - (isCW ? 0.5 : -0.5);
+        const tipX = mx + (arcR + 1.5) * Math.cos(tipAngle);
+        const tipY = my + (arcR + 1.5) * Math.sin(tipAngle);
+        const b1X = mx + (arcR - 1) * Math.cos(baseAngle1);
+        const b1Y = my + (arcR - 1) * Math.sin(baseAngle1);
+        const b2X = mx + (arcR + 1) * Math.cos(baseAngle2);
+        const b2Y = my + (arcR + 1) * Math.sin(baseAngle2);
+
+        return (
+          <g key={`motor-${m.number}`}
+            className={enabled ? 'cursor-pointer' : 'cursor-not-allowed'}
+            onClick={() => enabled && onMotorClick(m.number)}
+            opacity={dimmed ? 0.35 : 1}>
+            {/* Background disc to mask AirframeIcon's base layer */}
+            <circle cx={mx} cy={my} r={r + 2} fill={MC.bg} />
+            {/* Motor ring -- dashed for bottom coaxial motor */}
+            <circle cx={mx} cy={my} r={r} fill={MC.bg} stroke={color} strokeWidth={2}
+              strokeDasharray={isBottom ? '4,2' : 'none'} />
+            {/* Rotation arc */}
+            <path d={`M ${sx},${sy} A ${arcR},${arcR} 0 1,${sweepFlag} ${ex},${ey}`}
+              fill="none" stroke={color} strokeWidth="1" opacity="0.5" />
+            <polygon points={`${tipX},${tipY} ${b1X},${b1Y} ${b2X},${b2Y}`}
+              fill={color} opacity="0.5" />
+            {/* Number */}
+            <circle cx={mx} cy={my} r={4} fill={color} />
+            <text x={mx} y={my + 1.5} textAnchor="middle" dominantBaseline="central"
+              fill={isTesting ? '#000' : '#f1f5f9'} fontSize="7" fontWeight="900"
+              fontFamily="ui-monospace, monospace">{m.number}</text>
+            {/* Rotation label */}
+            <text x={mx} y={my + r + 5} textAnchor="middle" fill={color} fontSize="4"
+              fontFamily="ui-monospace, monospace" fontWeight="700">{m.rotation}</text>
+          </g>
+        );
+      })}
+    </>
+  );
+}
+
+
+// ============================================================
+// Plane Servo Diagram -- AirframeIcon base + servo labels overlay
+// ============================================================
+
+function PlaneServoOverlay({
+  servoFunctions,
+  SERVO_FUNCTIONS: funcNames,
+}: {
+  servoFunctions: Map<number, number>;
+  SERVO_FUNCTIONS: Record<number, string>;
+}) {
+  const assignments: { output: number; func: number; name: string }[] = [];
+  servoFunctions.forEach((func, output) => {
+    if (func === 0) return;
+    assignments.push({ output, func, name: funcNames[func] || `Func ${func}` });
+  });
+
+  const leftWing: typeof assignments = [];
+  const rightWing: typeof assignments = [];
+  const tail: typeof assignments = [];
+  const motor: typeof assignments = [];
+  let ailIdx = 0, flapIdx = 0;
+
+  for (const a of assignments) {
+    switch (a.func) {
+      case 77: if (ailIdx++ % 2 === 0) leftWing.push(a); else rightWing.push(a); break;
+      case 80: case 86: leftWing.push(a); break;
+      case 81: case 87: rightWing.push(a); break;
+      case 84: if (flapIdx++ % 2 === 0) leftWing.push(a); else rightWing.push(a); break;
+      case 78: case 79: case 4: tail.push(a); break;
+      case 33: case 34: case 35: case 36: case 70: case 73: case 74: motor.push(a); break;
+      default: break;
+    }
+  }
+
+  const funcColor = (func: number): string => {
+    if ([77, 80, 81, 84, 86, 87].includes(func)) return MC.ccw;
+    if (func === 78) return MC.nose;
+    if (func === 79) return '#a78bfa';
+    if ([33, 34, 35, 36, 70, 73, 74].includes(func)) return MC.port;
+    return MC.neutral;
+  };
+
+  // Labels positioned outside the 100x100 icon area within the wider viewBox
+  const VW = 160, VH = 120;
+  const ox = (VW - V) / 2; // icon x offset within wider viewBox
+
+  return (
+    <>
+      {/* Left wing labels */}
+      {leftWing.map((a, i) => {
+        const color = funcColor(a.func);
+        return (
+          <text key={`lw-${a.output}`} x={4} y={14 + i * 10} textAnchor="start" fill={color} fontSize="4.5"
+            fontFamily="ui-monospace, monospace" fontWeight="800">S{a.output}: {a.name}</text>
+        );
+      })}
+
+      {/* Right wing labels */}
+      {rightWing.map((a, i) => {
+        const color = funcColor(a.func);
+        return (
+          <text key={`rw-${a.output}`} x={VW - 4} y={14 + i * 10} textAnchor="end" fill={color} fontSize="4.5"
+            fontFamily="ui-monospace, monospace" fontWeight="800">S{a.output}: {a.name}</text>
+        );
+      })}
+
+      {/* Tail labels */}
+      {tail.map((a, i) => {
+        const color = funcColor(a.func);
+        return (
+          <text key={`tail-${a.output}`} x={VW / 2} y={VH - 6 - i * 9} textAnchor="middle" fill={color} fontSize="4.5"
+            fontFamily="ui-monospace, monospace" fontWeight="800">S{a.output}: {a.name}</text>
+        );
+      })}
+
+      {/* Motor labels */}
+      {motor.map((a, i) => {
+        const color = funcColor(a.func);
+        return (
+          <text key={`mot-${a.output}`} x={VW / 2 + 12} y={ox + 6 + i * 8} textAnchor="start"
+            fill={color} fontSize="4.5" fontFamily="ui-monospace, monospace" fontWeight="800">
+            S{a.output}: {a.name}
+          </text>
+        );
+      })}
+
+      {/* L/R labels */}
+      <text x={ox + 10} y={ox + 48} fontSize="6" fill={MC.port}
+        fontWeight="900" fontFamily="ui-monospace, monospace">L</text>
+      <text x={ox + V - 10} y={ox + 48} textAnchor="end" fontSize="6" fill={MC.starboard}
+        fontWeight="900" fontFamily="ui-monospace, monospace">R</text>
+    </>
+  );
+}
 
 
 // ============================================================
@@ -229,7 +452,6 @@ function MotorTestControls({
           </div>
         </div>
 
-        {/* Per-motor buttons for copters */}
         {motors && motors.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {motors.map((m) => (
@@ -245,7 +467,6 @@ function MotorTestControls({
           </div>
         )}
 
-        {/* Single test button for planes */}
         {!motors && (
           <button onClick={() => onTestMotor(1)} disabled={!enabled || testingMotor !== null}
             className={`btn gap-1.5 text-xs ${
@@ -282,28 +503,24 @@ export function MotorsPage() {
   const [testDuration, setTestDuration] = useState(3);
   const [testingMotor, setTestingMotor] = useState<number | null>(null);
   const [safetyAck, setSafetyAck] = useState(false);
-  const [testEnabled, setTestEnabled] = useState(false); // Must explicitly enable after safety ack
+  const [testEnabled, setTestEnabled] = useState(false);
 
   const isCopter = vehicleType === 'copter';
   const isPlane = vehicleType === 'plane';
   const isQuadPlane = vehicleType === 'quadplane';
 
-  // Detect configured airframe preset for correct silhouette
   const detectedPreset = useDetectedPreset();
 
-  // Copter frame layout -- read effective values (dirty edits take priority)
   const frameClass = dirtyParams.get('FRAME_CLASS') ?? parameters.get('FRAME_CLASS')?.value ?? 0;
   const frameType = dirtyParams.get('FRAME_TYPE') ?? parameters.get('FRAME_TYPE')?.value ?? 0;
   const copterLayout = isCopter ? getFrameLayout(frameClass, frameType) : null;
 
-  // QuadPlane VTOL motor layout
   const qFrameClass = isQuadPlane ? (dirtyParams.get('Q_FRAME_CLASS') ?? parameters.get('Q_FRAME_CLASS')?.value ?? 0) : 0;
   const qFrameType = isQuadPlane ? (dirtyParams.get('Q_FRAME_TYPE') ?? parameters.get('Q_FRAME_TYPE')?.value ?? 0) : 0;
   const qpLayout = isQuadPlane ? getFrameLayout(qFrameClass, qFrameType) : null;
 
   const motorLayout = isCopter ? copterLayout : qpLayout;
 
-  // Build servo function map for plane diagram (output → function)
   const servoFunctions = useMemo(() => {
     const map = new Map<number, number>();
     for (let i = 1; i <= 16; i++) {
@@ -313,13 +530,9 @@ export function MotorsPage() {
     return map;
   }, [parameters, dirtyParams]);
 
-  // Should we show the plane diagram?
   const showPlaneDiagram = isPlane || isQuadPlane;
-
-  // Two-step safety: acknowledge props removed, then enable/disable toggle
   const controlsEnabled = safetyAck && testEnabled && !armed;
 
-  // Stop motors on unmount or when disabling
   const stopMotors = useCallback(() => {
     connectionManager.motorTest(0, 0, 0).catch(() => {});
     setTestingMotor(null);
@@ -367,7 +580,6 @@ export function MotorsPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Motors &amp; Servos</h2>
         <p className="text-base text-muted">
@@ -377,7 +589,7 @@ export function MotorsPage() {
 
       {/* ============ SAFETY BANNER ============ */}
       {!safetyAck ? (
-        <div className="flex items-start gap-3 rounded-lg border border-yellow-600/40 bg-yellow-900/20 px-4 py-3">
+        <div className="flex items-start gap-3 rounded border border-yellow-600/40 bg-yellow-900/20 px-4 py-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-yellow-500" />
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-400">
@@ -394,7 +606,7 @@ export function MotorsPage() {
           </div>
         </div>
       ) : (
-        <div className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+        <div className={`flex items-center justify-between rounded border px-3 py-2 ${
           testEnabled ? 'border-green-600/30 bg-green-900/15' : 'border-border bg-surface-1'
         }`}>
           <div className="flex items-center gap-2">
@@ -424,8 +636,8 @@ export function MotorsPage() {
         </div>
       )}
 
-      {/* ============ PLANE DIAGRAM ============ */}
-      {showPlaneDiagram && (
+      {/* ============ PLANE DIAGRAM -- AirframeIcon + servo labels ============ */}
+      {showPlaneDiagram && detectedPreset && (
         <div className="card">
           <div className="card-header flex items-center justify-between">
             <span>Control Surface Layout</span>
@@ -435,13 +647,22 @@ export function MotorsPage() {
               <ExternalLink size={10} /> Plane Setup Guide
             </a>
           </div>
-          <PlaneServoDiagram
-            servoFunctions={servoFunctions}
-            SERVO_FUNCTIONS={SERVO_FUNCTIONS}
-            diagramType={detectedPreset?.planeTemplate?.diagramType ?? 'conventional'}
-            isTwin={(detectedPreset?.motorTemplate.forwardMotors.length ?? 0) >= 2}
-            isGlider={(detectedPreset?.motorTemplate.forwardMotors.length ?? 1) === 0 && !!detectedPreset?.planeTemplate}
-          />
+          <svg viewBox="0 0 160 120" className="mx-auto w-full max-w-[640px]">
+            <rect width="160" height="120" rx="6" fill={MC.bg} stroke={MC.bgStroke} strokeWidth="1" />
+            {/* FRONT marker */}
+            <polygon points="77,6 83,6 80,2" fill={MC.nose} />
+            <text x="80" y="11" textAnchor="middle" fill={MC.nose} fontSize="4"
+              fontFamily="ui-monospace, monospace" fontWeight="800">FRONT</text>
+            {/* AirframeIcon centered */}
+            <g transform={`translate(${(160 - V) / 2},${(120 - V) / 2})`}>
+              <AirframeIcon preset={detectedPreset} size={V} selected={false} />
+            </g>
+            {/* Servo labels overlay */}
+            <PlaneServoOverlay
+              servoFunctions={servoFunctions}
+              SERVO_FUNCTIONS={SERVO_FUNCTIONS}
+            />
+          </svg>
           <p className="mt-2 text-center text-[15px] text-subtle">
             Control surfaces shown based on current SERVOx_FUNCTION assignments.
             Change functions in the table below to update the diagram.
@@ -449,8 +670,8 @@ export function MotorsPage() {
         </div>
       )}
 
-      {/* ============ COPTER / QUADPLANE MOTOR DIAGRAM ============ */}
-      {motorLayout && (
+      {/* ============ COPTER / QUADPLANE MOTOR DIAGRAM -- AirframeIcon + overlay ============ */}
+      {motorLayout && detectedPreset && (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="card">
             <div className="card-header flex items-center justify-between">
@@ -461,13 +682,25 @@ export function MotorsPage() {
                 <ExternalLink size={10} /> Motor Order Reference
               </a>
             </div>
-            <CopterMotorDiagram
-              motors={motorLayout.motors}
-              frameName={motorLayout.name}
-              testingMotor={testingMotor}
-              enabled={controlsEnabled && testingMotor === null}
-              onMotorClick={handleMotorTest}
-            />
+            <svg viewBox={`0 0 ${V} ${V}`} className="mx-auto w-full max-w-[500px]">
+              <rect width={V} height={V} rx="6" fill={MC.bg} stroke={MC.bgStroke} strokeWidth="1" />
+              {/* Frame name */}
+              <text x={QUAD.cx} y="8" textAnchor="middle" fill={MC.neutral} fontSize="5"
+                fontFamily="ui-monospace, monospace" fontWeight="700">{motorLayout.name}</text>
+              {/* FRONT marker */}
+              <polygon points={`${QUAD.cx - 3},14 ${QUAD.cx + 3},14 ${QUAD.cx},10`} fill={MC.nose} />
+              <text x={QUAD.cx} y="19" textAnchor="middle" fill={MC.nose} fontSize="4.5"
+                fontFamily="ui-monospace, monospace" fontWeight="800">FRONT</text>
+              {/* AirframeIcon as base silhouette (ghost = no motor rings, overlay handles those) */}
+              <AirframeIcon preset={detectedPreset} size={V} selected={false} ghost={true} />
+              {/* Interactive motor overlay */}
+              <CopterMotorOverlay
+                motors={motorLayout.motors}
+                testingMotor={testingMotor}
+                enabled={controlsEnabled && testingMotor === null}
+                onMotorClick={handleMotorTest}
+              />
+            </svg>
             <p className="mt-2 text-center text-[15px] text-subtle">
               Click a motor to test it •{' '}
               <span className="text-blue-400">Blue = CCW</span> •{' '}
@@ -476,7 +709,6 @@ export function MotorsPage() {
           </div>
 
           <div className="space-y-4">
-            {/* Frame config card */}
             <div className="card">
               <div className="card-header">Frame Configuration</div>
               <div className="grid grid-cols-2 gap-4">
@@ -505,7 +737,6 @@ export function MotorsPage() {
               </div>
             </div>
 
-            {/* Motor test card */}
             <div className="card">
               <div className="card-header">Motor Test</div>
               <MotorTestControls
@@ -517,7 +748,7 @@ export function MotorsPage() {
               />
             </div>
 
-            <div className="rounded-lg border border-border bg-surface-1 px-4 py-3">
+            <div className="rounded border border-border bg-surface-1 px-4 py-3">
               <div className="flex items-center gap-4 text-[13px]">
                 <div className="flex items-center gap-1.5">
                   <RotateCcw size={12} className="text-blue-400" />

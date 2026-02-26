@@ -115,7 +115,7 @@ export function PortsPage() {
 
       {/* Board-aware info banner */}
       {hasUartPorts ? (
-        <div className="flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
+        <div className="flex items-start gap-3 rounded border border-accent/30 bg-accent/5 px-4 py-3">
           <Info size={14} className="mt-0.5 shrink-0 text-accent" />
           <p className="text-base text-muted leading-relaxed">
             Port labels match the physical pads on your <strong>{board!.name}</strong>.
@@ -125,7 +125,7 @@ export function PortsPage() {
           </p>
         </div>
       ) : (
-        <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-0 px-4 py-3">
+        <div className="flex items-start gap-3 rounded border border-border bg-surface-0 px-4 py-3">
           <Info size={14} className="mt-0.5 shrink-0 text-accent" />
           <p className="text-base text-muted leading-relaxed">
             {board

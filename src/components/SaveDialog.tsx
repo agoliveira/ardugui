@@ -52,7 +52,7 @@ export function SaveDialog({ onClose }: SaveDialogProps) {
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-lg rounded-xl border border-border bg-surface-1 shadow-2xl">
+      <div className="relative w-full max-w-lg rounded border border-border bg-surface-1 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-lg font-bold text-foreground">
@@ -115,7 +115,7 @@ export function SaveDialog({ onClose }: SaveDialogProps) {
           {saveState === 'done' && result && (
             <div className="space-y-4 py-2">
               {result.failed.length === 0 ? (
-                <div className="flex items-center gap-3 rounded-lg bg-success-muted px-4 py-3">
+                <div className="flex items-center gap-3 rounded bg-success-muted px-4 py-3">
                   <Check size={18} className="text-success" />
                   <div>
                     <p className="text-base font-semibold text-success">
@@ -126,14 +126,14 @@ export function SaveDialog({ onClose }: SaveDialogProps) {
               ) : (
                 <>
                   {result.success > 0 && (
-                    <div className="flex items-center gap-3 rounded-lg bg-success-muted px-4 py-3">
+                    <div className="flex items-center gap-3 rounded bg-success-muted px-4 py-3">
                       <Check size={16} className="text-success" />
                       <span className="text-base text-success">
                         {result.success} parameter{result.success !== 1 ? 's' : ''} saved
                       </span>
                     </div>
                   )}
-                  <div className="rounded-lg bg-danger-muted px-4 py-3">
+                  <div className="rounded bg-danger-muted px-4 py-3">
                     <div className="flex items-center gap-2 mb-2">
                       <XCircle size={16} className="text-danger" />
                       <span className="text-base font-semibold text-danger">

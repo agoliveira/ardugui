@@ -328,7 +328,7 @@ export function OSDPage() {
       {osdType === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <div
-            className="rounded-xl border p-8 text-center"
+            className="rounded border p-8 text-center"
             style={{
               backgroundColor: 'var(--color-surface-1)',
               borderColor: 'var(--color-border)',
@@ -482,7 +482,7 @@ export function OSDPage() {
         <div className="relative">
           <button
             onClick={() => setPresetOpen(!presetOpen)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded border transition-colors"
             style={{
               backgroundColor: 'var(--color-surface-0)',
               borderColor: 'var(--color-accent)',
@@ -502,7 +502,7 @@ export function OSDPage() {
 
           {presetOpen && (
             <div
-              className="absolute right-0 top-full mt-1 w-72 rounded-lg border shadow-xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-1 w-72 rounded border shadow-xl z-50 overflow-hidden"
               style={{
                 backgroundColor: 'var(--color-surface-1)',
                 borderColor: 'var(--color-border)',

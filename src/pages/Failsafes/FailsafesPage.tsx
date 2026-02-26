@@ -37,7 +37,7 @@ export function FailsafesPage() {
       </div>
 
       {/* Safety notice */}
-      <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+      <div className="flex items-start gap-3 rounded border border-warning/30 bg-warning/5 px-4 py-3">
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
         <div>
           <p className="text-base font-semibold text-foreground">Safety critical settings</p>
@@ -67,7 +67,7 @@ function FailsafeGroup({ group }: { group: ParamGroup }) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-surface-2/50"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded bg-accent/10">
           <Icon size={24} className="text-accent" />
         </div>
         <div className="flex-1">

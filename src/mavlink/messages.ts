@@ -269,6 +269,7 @@ export interface MagCalReport {
 
 // --- Command IDs ---
 export const MAV_CMD_PREFLIGHT_CALIBRATION = 241;
+export const MAV_CMD_PREFLIGHT_STORAGE = 245;
 export const MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN = 246;
 export const MAV_CMD_DO_START_MAG_CAL = 42424;
 export const MAV_CMD_DO_ACCEPT_MAG_CAL = 42425;

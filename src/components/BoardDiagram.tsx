@@ -8,7 +8,7 @@ interface BoardDiagramProps {
 // Color coding for connector types
 function connectorColor(c: BoardConnector): string {
   if (c.serialPort?.includes('SERIAL0')) return '#60a5fa'; // USB - blue
-  if (c.defaultProtocol === 'GPS') return '#fbbf24'; // GPS - amber
+  if (c.defaultProtocol === 'GPS') return '#ffcc66'; // GPS - marigold
   if (c.defaultProtocol === 'MAVLink') return '#34d399'; // Telemetry - green
   if (c.label.includes('POWER') || c.label.includes('BAT')) return '#f87171'; // Power - red
   if (c.label.includes('RC') || c.label.includes('RX')) return '#c084fc'; // RC - purple
@@ -67,7 +67,7 @@ export function BoardDiagram({ board }: BoardDiagramProps) {
             width={boardW}
             height={boardH}
             rx={8}
-            fill="#1a1f2e"
+            fill="#1a1816"
             stroke="#334155"
             strokeWidth={2}
           />

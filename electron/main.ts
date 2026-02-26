@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, Menu, ipcMain } from 'electron';
 import path from 'path';
 import { registerSerialHandlers } from './serial/serialBridge';
+import { initDb, closeDb } from './db/parameterDb';
+import { registerDbHandlers } from './db/dbBridge';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -129,6 +131,9 @@ function createWindow() {
 // Register serial port IPC handlers
 registerSerialHandlers(() => mainWindow);
 
+// Register parameter database IPC handlers
+registerDbHandlers();
+
 // IPC: toggle DevTools from renderer
 ipcMain.handle('toggle-devtools', () => {
   mainWindow?.webContents.toggleDevTools();
@@ -165,7 +170,14 @@ ipcMain.handle('fs:open-file', async (_event, filters: { name: string; extension
   return { path: filePaths[0], content };
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  await initDb();
+  createWindow();
+});
+
+app.on('will-quit', () => {
+  closeDb();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

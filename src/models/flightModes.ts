@@ -24,7 +24,7 @@ export const COPTER_MODES: FlightMode[] = [
   { id: 3,  name: 'Auto',        description: 'Follow pre-programmed mission',            color: '#a855f7' },
   { id: 4,  name: 'Guided',      description: 'Navigate to GCS-commanded position',       color: '#8b5cf6' },
   { id: 5,  name: 'Loiter',      description: 'Hold position and altitude',               color: '#06b6d4' },
-  { id: 6,  name: 'RTL',         description: 'Return to launch',                         color: '#f59e0b' },
+  { id: 6,  name: 'RTL',         description: 'Return to launch',                         color: '#ffaa2a' },
   { id: 7,  name: 'Circle',      description: 'Orbit a point',                            color: '#ec4899' },
   { id: 9,  name: 'Land',        description: 'Automatic landing',                        color: '#14b8a6' },
   { id: 11, name: 'Drift',       description: 'Drift-style flying',                       color: '#64748b' },
@@ -42,7 +42,7 @@ export const COPTER_MODES: FlightMode[] = [
   { id: 24, name: 'ZigZag',      description: 'Autonomous zigzag for spraying',           color: '#4ade80' },
   { id: 25, name: 'SystemID',    description: 'System identification',                    color: '#6b7280' },
   { id: 26, name: 'Heli Autorotate', description: 'Helicopter autorotation',              color: '#b91c1c' },
-  { id: 27, name: 'Auto RTL',    description: 'Return via mission then RTL',              color: '#d97706' },
+  { id: 27, name: 'Auto RTL',    description: 'Return via mission then RTL',              color: '#e89520' },
 ];
 
 // --- Plane modes ---
@@ -57,7 +57,7 @@ export const PLANE_MODES: FlightMode[] = [
   { id: 7,  name: 'Cruise',      description: 'Speed and altitude hold',                  color: '#14b8a6' },
   { id: 8,  name: 'AutoTune',    description: 'Automated tuning',                         color: '#84cc16' },
   { id: 10, name: 'Auto',        description: 'Follow pre-programmed mission',            color: '#a855f7' },
-  { id: 11, name: 'RTL',         description: 'Return to launch',                         color: '#f59e0b' },
+  { id: 11, name: 'RTL',         description: 'Return to launch',                         color: '#ffaa2a' },
   { id: 12, name: 'Loiter',      description: 'Circle and hold altitude',                 color: '#06b6d4' },
   { id: 13, name: 'Takeoff',     description: 'Automatic takeoff',                        color: '#10b981' },
   { id: 14, name: 'Avoid ADSB',  description: 'ADS-B avoidance mode',                     color: '#737373' },
@@ -69,8 +69,8 @@ export const PLANE_MODES: FlightMode[] = [
   { id: 21, name: 'QRTL',        description: 'VTOL return to launch',                    color: '#eab308' },
   { id: 22, name: 'QAutoTune',   description: 'VTOL automated tuning',                    color: '#a3e635' },
   { id: 23, name: 'QAcro',       description: 'VTOL acrobatic mode',                      color: '#dc2626' },
-  { id: 24, name: 'Thermal',     description: 'Thermal soaring',                          color: '#f59e0b' },
-  { id: 25, name: 'Loiter to QLand', description: 'Loiter then VTOL land',                color: '#d97706' },
+  { id: 24, name: 'Thermal',     description: 'Thermal soaring',                          color: '#ffaa2a' },
+  { id: 25, name: 'Loiter to QLand', description: 'Loiter then VTOL land',                color: '#e89520' },
 ];
 
 // QuadPlane uses the plane modes list (includes Q* modes)

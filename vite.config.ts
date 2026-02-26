@@ -16,7 +16,7 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron',
             rollupOptions: {
-              external: ['serialport', 'electron'],
+              external: ['serialport', 'electron', 'sql.js'],
             },
           },
         },

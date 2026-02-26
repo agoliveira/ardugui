@@ -79,7 +79,7 @@ function ChannelBar({ channel, pwm, min, max }: ChannelBarProps) {
       {/* Bar area */}
       <div className="relative flex-1">
         {/* Track */}
-        <div className="relative h-8 rounded-lg bg-surface-0 border border-border overflow-hidden">
+        <div className="relative h-8 rounded bg-surface-0 border border-border overflow-hidden">
           {/* Normal range background */}
           <div
             className="absolute top-0 h-full opacity-10"
@@ -287,7 +287,7 @@ export function ReceiverPage() {
 
       {/* Info box */}
       {hasSignal && (
-        <div className="rounded-lg border border-border bg-surface-1 px-4 py-3">
+        <div className="rounded border border-border bg-surface-1 px-4 py-3">
           <p className="text-base text-muted">
             Move all sticks and switches to their extremes to verify full range.
             Standard range is 1000–2000 μs with 1500 center.

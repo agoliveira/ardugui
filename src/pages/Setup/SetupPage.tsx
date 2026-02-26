@@ -129,7 +129,7 @@ export function SetupPage() {
 
             {/* Error */}
             {error && (
-              <div className="mt-5 flex items-start gap-3 rounded-xl bg-danger-muted/40 border border-danger/30 px-5 py-3.5">
+              <div className="mt-5 flex items-start gap-3 rounded bg-danger-muted/40 border border-danger/30 px-5 py-3.5">
                 <AlertCircle size={20} className="mt-0.5 shrink-0 text-danger" />
                 <span className="text-base font-semibold text-danger">{error}</span>
               </div>
@@ -149,7 +149,7 @@ export function SetupPage() {
                 { n: 4, text: 'Click Connect -- ArduGUI will detect your aircraft automatically' },
               ].map(({ n, text }) => (
                 <div key={n} className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded
                     bg-accent/15 border border-accent/30 text-sm font-extrabold text-accent">
                     {n}
                   </span>
@@ -201,7 +201,7 @@ export function SetupPage() {
             )}
 
             {error && (
-              <div className="flex items-start gap-3 rounded-xl bg-danger-muted/40 border border-danger/30 px-5 py-3.5">
+              <div className="flex items-start gap-3 rounded bg-danger-muted/40 border border-danger/30 px-5 py-3.5">
                 <AlertCircle size={20} className="mt-0.5 shrink-0 text-danger" />
                 <span className="text-base font-semibold text-danger">{error}</span>
               </div>
@@ -220,7 +220,7 @@ export function SetupPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Connected</h1>
+        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Information</h1>
         <p className="mt-1 text-lg text-muted">
           {firmwareType} {firmwareVersion} on {portPath}
         </p>
@@ -261,7 +261,7 @@ function InfoCell({ icon: Icon, label, value, valueColor }: {
 }) {
   return (
     <div className="flex items-center gap-3.5 px-5 py-4 border-b border-r border-border/40 last:border-r-0">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10">
+      <div className="flex h-11 w-11 items-center justify-center rounded bg-accent/10">
         <Icon size={22} className="text-accent" />
       </div>
       <div className="min-w-0">

@@ -1,13 +1,24 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+/**
+ * Frame Configuration Page -- single-page layout.
+ *
+ * Two configuration sections + one informational:
+ *   1. Frame Selection -- pick airframe type from the grid
+ *   2. Options -- extras like flaps, retracts (contextual to frame)
+ *   3. Suggested Wiring -- read-only default output mapping
+ *
+ * The options and wiring sections stay collapsed until a frame is selected.
+ */
+
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
+  ChevronDown,
   ChevronRight,
-  ChevronLeft,
   Check,
   Plane,
   Cpu,
   Rocket,
-  Wrench,
-  AlertTriangle,
+  Save,
+  ArrowLeft,
 } from 'lucide-react';
 import { useParameterStore } from '@/store/parameterStore';
 import { useVehicleStore } from '@/store/vehicleStore';
@@ -17,693 +28,442 @@ import {
   EXTRA_OPTIONS,
   type AirframePreset,
 } from '@/models/airframeTemplates';
-import { AirframeIcon } from '@/components/AirframeIcons';
+import { AirframeIcon, AIRFRAME_VIEWBOX } from '@/components/AirframeIcons';
 
-type WizardStep = 'airframe' | 'extras' | 'outputs' | 'done';
 type CategoryTab = 'plane' | 'copter' | 'vtol';
 
-// ============================================================
-// Step 1: Airframe Selection
-// ============================================================
+// ── Suggested Wiring Diagram -- read-only, AirframeIcon + default outputs ──
 
-function AirframeGrid({
-  category,
-  selected,
-  currentId,
-  onSelect,
-}: {
-  category: CategoryTab;
-  selected: AirframePreset | null;
-  currentId: string | null;
-  onSelect: (p: AirframePreset) => void;
-}) {
-  const presets = AIRFRAME_PRESETS.filter((p) => p.category === category);
+function SuggestedWiringDiagram({ preset }: { preset: AirframePreset }) {
+  const V = AIRFRAME_VIEWBOX;
+  const pad = 50;
+  const total = V + pad * 2;
+  const offset = pad;
 
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {presets.map((p) => {
-        const isSelected = selected?.id === p.id;
-        const isCurrent = p.id === currentId;
-        return (
-          <button
-            key={p.id}
-            onClick={() => onSelect(p)}
-            className={`group relative flex flex-col items-center gap-3 rounded-xl border-2 p-5 text-center transition ${
-              isSelected
-                ? 'border-accent bg-accent/10'
-                : isCurrent
-                  ? 'border-success/50 bg-success/5'
-                  : 'border-border bg-surface-1 hover:border-accent/50 hover:bg-surface-2'
-            }`}
-          >
-            {isCurrent && (
-              <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-success-muted/60 border border-success/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
-                <Check size={10} />
-                Active
-              </span>
-            )}
-            {/* Aircraft silhouette */}
-            <AirframeIcon preset={p} size={140} selected={isSelected} />
-            <div>
-              <p className={`text-base font-bold ${isSelected ? 'text-accent' : 'text-foreground'}`}>
-                {p.name}
-              </p>
-              <p className="mt-0.5 text-base text-muted leading-snug">{p.description}</p>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+  const mapX = (dx: number) => offset + V / 2 + dx * (V * 0.42);
+  const mapY = (dy: number) => offset + V / 2 - dy * (V * 0.42);
 
-// ============================================================
-// Step 2: Extras Selection
-// ============================================================
-
-function ExtrasStep({
-  preset,
-  selectedExtras,
-  onToggle,
-}: {
-  preset: AirframePreset;
-  selectedExtras: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  const available = preset.availableExtras.map((id) => EXTRA_OPTIONS[id]).filter(Boolean);
-
-  if (available.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-subtle">
-        <p className="text-sm">No additional options for this airframe.</p>
-        <p className="mt-1 text-sm">Continue to output assignment.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {available.map((extra) => {
-        const isOn = selectedExtras.has(extra.id);
-        return (
-          <button
-            key={extra.id}
-            onClick={() => onToggle(extra.id)}
-            className={`flex items-start gap-3 rounded-lg border-2 px-4 py-3 text-left transition ${
-              isOn
-                ? 'border-accent bg-accent/10'
-                : 'border-border bg-surface-1 hover:border-accent/50'
-            }`}
-          >
-            <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-              isOn ? 'border-accent bg-accent text-white' : 'border-subtle'
-            }`}>
-              {isOn && <Check size={12} />}
-            </div>
-            <div>
-              <p className={`text-base font-bold ${isOn ? 'text-accent' : 'text-foreground'}`}>
-                {extra.label}
-              </p>
-              <p className="mt-0.5 text-base text-muted">{extra.description}</p>
-              <p className="mt-1 text-lg text-muted">
-                Adds: {extra.slots.map((s) => s.label).join(', ')}
-              </p>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ============================================================
-// Step 3: Output Assignment
-// ============================================================
-
-interface OutputMapping {
-  slotId: string;
-  label: string;
-  functionId: number;
-  output: number; // 1-based SERVO output
-  category: string;
-}
-
-function OutputsStep({
-  preset,
-  mappings,
-  onChangeOutput,
-}: {
-  preset: AirframePreset;
-  mappings: OutputMapping[];
-  onChangeOutput: (slotId: string, output: number) => void;
-}) {
-  // Find conflicts (multiple slots assigned to same output)
-  const outputUsage = new Map<number, string[]>();
-  for (const m of mappings) {
-    const list = outputUsage.get(m.output) || [];
-    list.push(m.slotId);
-    outputUsage.set(m.output, list);
-  }
-  const conflicts = new Set<number>();
-  outputUsage.forEach((slots, output) => {
-    if (slots.length > 1) conflicts.add(output);
-  });
-
-  // Group by category
-  const surfaceSlots = mappings.filter((m) => ['wing_left', 'wing_right', 'tail'].includes(m.category));
-  const motorSlots = mappings.filter((m) => ['motor_front', 'motor_vtol'].includes(m.category));
-  const otherSlots = mappings.filter((m) => m.category === 'other');
-
-  // Build map of output → which slot is using it (for greying out in dropdowns)
-  const usedByOutput = new Map<number, string>();
-  for (const m of mappings) {
-    usedByOutput.set(m.output, m.slotId);
-  }
-
-  const renderGroup = (title: string, slots: OutputMapping[]) => {
-    if (slots.length === 0) return null;
-    return (
-      <div>
-        <h4 className="mb-2 text-sm font-bold uppercase tracking-wider text-subtle">{title}</h4>
-        <div className="space-y-2">
-          {slots.map((m) => {
-            const hasConflict = conflicts.has(m.output);
-            return (
-              <div key={m.slotId}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 ${
-                  hasConflict ? 'border-red-500/50 bg-red-900/10' : 'border-border bg-surface-1'
-                }`}>
-                <span className="flex-1 text-base font-semibold text-foreground">{m.label}</span>
-                <select
-                  value={m.output}
-                  onChange={(e) => onChangeOutput(m.slotId, Number(e.target.value))}
-                  className="rounded border border-border bg-surface-0 px-3 py-1.5 font-mono text-base text-foreground"
-                >
-                  {Array.from({ length: 16 }, (_, i) => i + 1).map((n) => {
-                    const usedBy = usedByOutput.get(n);
-                    const isUsedByOther = usedBy !== undefined && usedBy !== m.slotId;
-                    const otherLabel = isUsedByOther
-                      ? mappings.find((o) => o.slotId === usedBy)?.label
-                      : null;
-                    return (
-                      <option key={n} value={n} disabled={isUsedByOther}>
-                        Output {n}{otherLabel ? ` (${otherLabel})` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                {hasConflict && (
-                  <AlertTriangle size={14} className="shrink-0 text-red-500" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {/* Diagram */}
-      <div className="card">
-        <div className="card-header">Wiring Diagram</div>
-        <CombinedDiagram preset={preset} mappings={mappings} conflicts={conflicts} />
-        <p className="mt-2 text-center text-base text-muted">
-          Match each function to the output it is wired to on your flight controller.
-        </p>
-      </div>
-
-      {/* Assignment list */}
-      <div className="space-y-6">
-        {renderGroup('Control Surfaces', surfaceSlots)}
-        {renderGroup('Motors', motorSlots)}
-        {renderGroup('Accessories', otherSlots)}
-
-        {conflicts.size > 0 && (
-          <div className="flex items-center gap-2 rounded bg-red-900/20 px-3 py-2.5 text-sm text-red-400">
-            <AlertTriangle size={14} />
-            Output conflict -- multiple functions on the same SERVO output.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// Combined Diagram -- plane surfaces + motor positions
-// ============================================================
-
-function CombinedDiagram({
-  preset,
-  mappings,
-  conflicts,
-}: {
-  preset: AirframePreset;
-  mappings: OutputMapping[];
-  conflicts: Set<number>;
-}) {
-  const W = 420;
-  const H = 360;
-  const cx = W / 2;
-  const cy = H / 2;
-  const isPlane = preset.planeTemplate !== null;
   const motors = preset.motorTemplate.vtolMotors;
-  const hasMotors = motors.length > 0;
-
-  // Scale for motor positions
-  const mScale = isPlane ? 65 : 95;
-  // Offset motors down a bit when combined with plane
-  const mOffY = isPlane ? 5 : 0;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto w-full">
-      <rect width={W} height={H} rx={8} fill="#0d1117" />
+    <svg viewBox={`0 0 ${total} ${total}`} className="mx-auto w-full max-w-sm">
+      <rect width={total} height={total} rx={6} fill="#13120f" />
 
       {/* Front indicator */}
-      <polygon points={`${cx - 6},14 ${cx + 6},14 ${cx},7`} fill="#60a5fa" opacity={0.6} />
-      <text x={cx} y={25} textAnchor="middle" fill="#60a5fa" fontSize={9}
-        fontFamily="ui-monospace, monospace">FRONT</text>
+      <polygon
+        points={`${total / 2 - 5},${offset - 8} ${total / 2 + 5},${offset - 8} ${total / 2},${offset - 14}`}
+        fill="#60a5fa" opacity={0.6}
+      />
+      <text
+        x={total / 2} y={offset - 16}
+        textAnchor="middle" fill="#60a5fa" fontSize={8}
+        fontFamily="ui-monospace, monospace"
+      >
+        FRONT
+      </text>
 
-      {/* === PLANE BODY === */}
-      {isPlane && (
-        <g>
-          {/* Fuselage */}
-          <ellipse cx={cx} cy={cy + mOffY} rx={10} ry={65}
-            fill="#1e293b" stroke="#475569" strokeWidth={1.2} />
+      {/* AirframeIcon silhouette (ghost = no motor rings, wiring labels handle those) */}
+      <g transform={`translate(${offset}, ${offset})`}>
+        <AirframeIcon preset={preset} size={V} selected={false} ghost={true} />
+      </g>
 
-          {/* Wings */}
-          {preset.planeTemplate?.diagramType !== 'flying_wing' ? (
-            <g>
-              <path d={`M ${cx - 8},${cy - 5} L ${cx - 140},${cy + 5} L ${cx - 135},${cy + 12} L ${cx - 8},${cy + 3} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-              <path d={`M ${cx + 8},${cy - 5} L ${cx + 140},${cy + 5} L ${cx + 135},${cy + 12} L ${cx + 8},${cy + 3} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-            </g>
-          ) : (
-            <g>
-              {/* Flying wing -- swept */}
-              <path d={`M ${cx},${cy - 30} L ${cx - 140},${cy + 10} L ${cx - 120},${cy + 18} L ${cx - 8},${cy} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-              <path d={`M ${cx},${cy - 30} L ${cx + 140},${cy + 10} L ${cx + 120},${cy + 18} L ${cx + 8},${cy} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-            </g>
-          )}
+      {/* Motor default outputs -- clean overlay with coaxial offset */}
+      {(() => {
+        // Detect coaxial pairs (same x,y) and offset bottom motors
+        const posKey = (m: typeof motors[0]) => `${m.x.toFixed(3)},${m.y.toFixed(3)}`;
+        const posGroups = new Map<string, number[]>();
+        motors.forEach((m, i) => {
+          const k = posKey(m);
+          if (!posGroups.has(k)) posGroups.set(k, []);
+          posGroups.get(k)!.push(i);
+        });
+        const coaxialPx = 10;
 
-          {/* Tail (non-flying-wing) */}
-          {preset.planeTemplate?.diagramType !== 'flying_wing' && (
-            <g>
-              {/* H-tail */}
-              <path d={`M ${cx - 6},${cy + 50} L ${cx - 40},${cy + 56} L ${cx - 38},${cy + 62} L ${cx - 6},${cy + 56} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-              <path d={`M ${cx + 6},${cy + 50} L ${cx + 40},${cy + 56} L ${cx + 38},${cy + 62} L ${cx + 6},${cy + 56} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-              {/* V-tail */}
-              <path d={`M ${cx - 2},${cy + 45} L ${cx},${cy + 35} L ${cx + 2},${cy + 45} Z`}
-                fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-            </g>
-          )}
-        </g>
-      )}
+        return motors.map((motor, idx) => {
+          let mx = mapX(motor.x);
+          let my = mapY(motor.y);
 
-      {/* === SURFACE LABELS === */}
-      {isPlane && (() => {
-        const surfaceMappings = mappings.filter((m) => ['wing_left', 'wing_right', 'tail'].includes(m.category));
-        // Track index per category for staggering
-        const catIdx: Record<string, number> = {};
-        return surfaceMappings.map((m) => {
-          const idx = catIdx[m.category] ?? 0;
-          catIdx[m.category] = idx + 1;
-          const pos = getSurfaceLabelPos(m, cx, cy, idx);
-          const hasConflict = conflicts.has(m.output);
-          const color = hasConflict ? '#ef4444' : getCategoryColor(m.category);
+          const k = posKey(motor);
+          const group = posGroups.get(k)!;
+          const isBottom = group.length >= 2 && idx === group[1];
+          if (isBottom) {
+            const cx = total / 2;
+            const cy = total / 2;
+            const dx = mx - cx;
+            const dy = my - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            mx += (dx / dist) * coaxialPx;
+            my += (dy / dist) * coaxialPx;
+          }
+
+          const color = motor.rotation === 'CCW' ? '#60a5fa' : '#f87171';
+
           return (
-            <g key={m.slotId}>
-              <circle cx={pos.dotX} cy={pos.dotY} r={3}
-                fill={color} opacity={0.7} />
-              <line x1={pos.dotX} y1={pos.dotY} x2={pos.labelX} y2={pos.labelY}
-                stroke={color} strokeWidth={0.5} opacity={0.4} />
-              <text x={pos.labelX} y={pos.labelY} textAnchor={pos.anchor}
-                fill={color} fontSize={9} fontFamily="ui-monospace, monospace" fontWeight={600}>
-                Out {m.output}: {m.label}
+            <g key={`motor-${motor.number}`}>
+              <circle cx={mx} cy={my} r={12} fill="#13120f" />
+              <circle cx={mx} cy={my} r={10} fill="#201e1a" stroke={color} strokeWidth={1.2}
+                strokeDasharray={isBottom ? '4,2' : 'none'} />
+              <text
+                x={mx} y={my + 1}
+                textAnchor="middle" dominantBaseline="central"
+                fill="#e2e8f0" fontSize={9} fontWeight={700}
+                fontFamily="ui-monospace, monospace"
+              >
+                {motor.number}
+              </text>
+              <text
+                x={mx} y={my + 16}
+                textAnchor="middle"
+                fill={color} fontSize={6} opacity={0.8}
+                fontFamily="ui-monospace, monospace"
+              >
+                Out {motor.defaultOutput}
               </text>
             </g>
           );
         });
       })()}
 
-      {/* === MOTOR POSITIONS === */}
-      {hasMotors && (
-        <g>
-          {/* Arms from center */}
-          {motors.map((m) => (
-            <line key={`arm-${m.number}`}
-              x1={cx} y1={cy + mOffY}
-              x2={cx + m.x * mScale} y2={cy + mOffY - m.y * mScale}
-              stroke="#334155" strokeWidth={2} strokeLinecap="round" />
-          ))}
+      {/* Plane surface default outputs */}
+      {preset.planeTemplate?.surfaces.map((surface) => {
+        const sx = mapX(surface.diagramPos.x);
+        const sy = mapY(surface.diagramPos.y);
+        const isLeft = surface.diagramPos.x < -0.2;
+        const isRight = surface.diagramPos.x > 0.2;
+        const labelX = isLeft ? 8 : isRight ? total - 8 : total / 2;
+        const anchor = isLeft ? 'start' : isRight ? 'end' : 'middle';
 
-          {/* Motor circles */}
-          {motors.map((m) => {
-            const mx = cx + m.x * mScale;
-            const my = cy + mOffY - m.y * mScale;
-            const mapping = mappings.find((mp) => mp.slotId === `vtol_motor_${m.number}`);
-            const hasConflict = mapping ? conflicts.has(mapping.output) : false;
-            const strokeColor = hasConflict ? '#ef4444' : m.rotation === 'CCW' ? '#60a5fa' : '#f87171';
+        return (
+          <g key={surface.id}>
+            <circle cx={sx} cy={sy} r={3} fill="#60a5fa" opacity={0.6} />
+            <line
+              x1={sx} y1={sy} x2={labelX} y2={sy}
+              stroke="#60a5fa" strokeWidth={0.5} opacity={0.3}
+            />
+            <text
+              x={labelX} y={sy + 3}
+              textAnchor={anchor}
+              fill="#60a5fa" fontSize={6.5} opacity={0.8}
+              fontFamily="ui-monospace, monospace" fontWeight={600}
+            >
+              Out {surface.defaultOutput}: {surface.label}
+            </text>
+          </g>
+        );
+      })}
 
-            return (
-              <g key={`motor-${m.number}`}>
-                <circle cx={mx} cy={my} r={14}
-                  fill="#1e293b" stroke={strokeColor} strokeWidth={1.5} />
-                <text x={mx} y={my + 1} textAnchor="middle" dominantBaseline="central"
-                  fill="#e2e8f0" fontSize={12} fontWeight={700}
-                  fontFamily="ui-monospace, monospace">
-                  {m.number}
-                </text>
-                {mapping && (
-                  <text x={mx} y={my + 22} textAnchor="middle"
-                    fill={strokeColor} fontSize={9}
-                    fontFamily="ui-monospace, monospace">
-                    Out {mapping.output}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </g>
-      )}
-
-      {/* === FORWARD MOTOR === */}
-      {mappings
-        .filter((m) => m.category === 'motor_front')
-        .map((m) => {
-          const hasConflict = conflicts.has(m.output);
-          const color = hasConflict ? '#ef4444' : '#f59e0b';
-          return (
-            <g key={m.slotId}>
-              <circle cx={cx} cy={cy - 62} r={6}
-                fill="none" stroke={color} strokeWidth={1.5} />
-              <line x1={cx - 10} y1={cy - 62} x2={cx + 10} y2={cy - 62}
-                stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-              <text x={cx + 16} y={cy - 59} textAnchor="start"
-                fill={color} fontSize={9} fontFamily="ui-monospace, monospace" fontWeight={600}>
-                Out {m.output}: {m.label}
-              </text>
-            </g>
-          );
-        })}
+      {/* Forward motor default outputs */}
+      {preset.motorTemplate.forwardMotors.map((fm) => {
+        const fx = mapX(fm.diagramPos.x);
+        const fy = mapY(fm.diagramPos.y);
+        return (
+          <g key={fm.id}>
+            <circle cx={fx} cy={fy - 2} r={4} fill="none" stroke="#ffaa2a" strokeWidth={1} />
+            <line
+              x1={fx - 7} y1={fy - 2} x2={fx + 7} y2={fy - 2}
+              stroke="#ffaa2a" strokeWidth={1} strokeLinecap="round"
+            />
+            <text
+              x={fx + 12} y={fy}
+              textAnchor="start"
+              fill="#ffaa2a" fontSize={6.5} opacity={0.8}
+              fontFamily="ui-monospace, monospace" fontWeight={600}
+            >
+              Out {fm.defaultOutput}: {fm.label}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
 
-function getSurfaceLabelPos(m: OutputMapping, cx: number, cy: number, idx: number) {
-  const spacing = 16;
-  switch (m.category) {
-    case 'wing_left':
-      return {
-        dotX: cx - 95 + idx * 18, dotY: cy + 4 + idx * 3,
-        labelX: 10, labelY: 44 + idx * spacing,
-        anchor: 'start' as const,
-      };
-    case 'wing_right':
-      return {
-        dotX: cx + 95 - idx * 18, dotY: cy + 4 + idx * 3,
-        labelX: 410, labelY: 44 + idx * spacing,
-        anchor: 'end' as const,
-      };
-    case 'tail':
-      return {
-        dotX: cx + (idx % 2 === 0 ? -20 : 20), dotY: cy + 55,
-        labelX: cx, labelY: cy + 85 + idx * spacing,
-        anchor: 'middle' as const,
-      };
-    default:
-      return {
-        dotX: cx, dotY: cy,
-        labelX: cx, labelY: cy + 100 + idx * spacing,
-        anchor: 'middle' as const,
-      };
-  }
+// ── Section wrapper with collapse ───────────────────────────────────────
+
+function Section({
+  title,
+  number,
+  enabled,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  number: number;
+  enabled: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className={`rounded border transition ${
+      enabled ? 'border-border bg-surface-1' : 'border-border/50 bg-surface-1/50 opacity-50'
+    }`}>
+      <button
+        onClick={() => enabled && setOpen(!open)}
+        disabled={!enabled}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left"
+      >
+        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+          enabled ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-surface-2 text-subtle'
+        }`}>
+          {number}
+        </div>
+        <span className={`flex-1 text-lg font-bold ${enabled ? 'text-foreground' : 'text-subtle'}`}>
+          {title}
+        </span>
+        {enabled && (
+          open
+            ? <ChevronDown size={18} className="text-subtle" />
+            : <ChevronRight size={18} className="text-subtle" />
+        )}
+      </button>
+      {enabled && open && (
+        <div className="border-t border-border px-5 pb-5 pt-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function getCategoryColor(category: string): string {
-  switch (category) {
-    case 'wing_left':
-    case 'wing_right':
-      return '#60a5fa';
-    case 'tail':
-      return '#34d399';
-    case 'motor_front':
-    case 'motor_vtol':
-      return '#f59e0b';
-    default:
-      return '#94a3b8';
-  }
-}
+// ── Main Component ──────────────────────────────────────────────────────
 
-// ============================================================
-// Frame Wizard Main Component
-// ============================================================
-
-export function FrameWizard({ onClose, onDirtyChange }: { onClose: () => void; onDirtyChange?: (dirty: boolean) => void }) {
+export function FrameWizard({
+  onClose,
+  onDirtyChange,
+  onNavigate,
+}: {
+  onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  onNavigate?: (page: string) => void;
+}) {
   const vehicleType = useVehicleStore((s) => s.type);
-  const setParamLocal = useParameterStore((s) => s.setParamLocal);
-
-  // Detect currently configured preset from FC parameters
+  const stageParams = useParameterStore((s) => s.stageParams);
   const detectedPreset = useDetectedPreset();
 
-  const [step, setStep] = useState<WizardStep>('airframe');
   const [categoryTab, setCategoryTab] = useState<CategoryTab>(
     vehicleType === 'copter' ? 'copter' : vehicleType === 'quadplane' ? 'vtol' : 'plane'
   );
   const [selectedPreset, setSelectedPreset] = useState<AirframePreset | null>(detectedPreset);
   const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
-  const [outputOverrides, setOutputOverrides] = useState<Map<string, number>>(new Map());
-  // Only dirty if user actively changed something from the initial state
   const [userModified, setUserModified] = useState(false);
+  const [applied, setApplied] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Wrap setSelectedPreset to track user changes
+  // Copter category drill-down: null = show categories, string = show variants for that class
+  const [copterCategory, setCopterCategory] = useState<string | null>(null);
+
+  // Suppress unused warnings -- kept for future use
+  void onClose;
+  void onNavigate;
+  void scrollRef;
+
   const handleSelectPreset = useCallback((p: AirframePreset) => {
+    if (selectedPreset && selectedPreset.id !== p.id) {
+      const confirmed = window.confirm(
+        'Switching frames will reset your options. Continue?'
+      );
+      if (!confirmed) return;
+    }
     setSelectedPreset(p);
     setUserModified(true);
-  }, []);
+    setApplied(false);
+    setSelectedExtras(new Set());
+  }, [selectedPreset]);
 
-  // Track whether user has done any work worth warning about
-  const hasUnsavedWork = userModified && selectedPreset !== null && step !== 'done';
+  const hasUnsavedWork = userModified && selectedPreset !== null && !applied;
 
-  // Notify parent of dirty state
   useEffect(() => {
     onDirtyChange?.(hasUnsavedWork);
   }, [hasUnsavedWork, onDirtyChange]);
 
-  // Safe close -- confirm if there's unsaved work
-  const handleClose = useCallback(() => {
-    if (hasUnsavedWork) {
-      const confirmed = window.confirm(
-        'You have unsaved frame configuration. Are you sure you want to leave? Your changes will be lost.'
-      );
-      if (!confirmed) return;
-    }
-    onClose();
-  }, [hasUnsavedWork, onClose]);
+  // ── Build default output mappings for Apply ────────────────────────
 
-  // Build the full mapping list from preset + extras
-  const mappings = useMemo<OutputMapping[]>(() => {
+  const mappings = useMemo(() => {
     if (!selectedPreset) return [];
 
-    const result: OutputMapping[] = [];
+    const result: { functionId: number; output: number }[] = [];
 
-    // Plane surfaces
     if (selectedPreset.planeTemplate) {
       for (const slot of selectedPreset.planeTemplate.surfaces) {
-        result.push({
-          slotId: slot.id,
-          label: slot.label,
-          functionId: slot.function,
-          output: outputOverrides.get(slot.id) ?? slot.defaultOutput,
-          category: slot.category,
-        });
+        result.push({ functionId: slot.function, output: slot.defaultOutput });
       }
     }
 
-    // Forward motors
     for (const slot of selectedPreset.motorTemplate.forwardMotors) {
-      result.push({
-        slotId: slot.id,
-        label: slot.label,
-        functionId: slot.function,
-        output: outputOverrides.get(slot.id) ?? slot.defaultOutput,
-        category: slot.category,
-      });
+      result.push({ functionId: slot.function, output: slot.defaultOutput });
     }
 
-    // VTOL motors
     for (const motor of selectedPreset.motorTemplate.vtolMotors) {
-      const slotId = `vtol_motor_${motor.number}`;
-      result.push({
-        slotId,
-        label: `Motor ${motor.number}`,
-        functionId: motor.function,
-        output: outputOverrides.get(slotId) ?? motor.defaultOutput,
-        category: 'motor_vtol',
-      });
+      result.push({ functionId: motor.function, output: motor.defaultOutput });
     }
 
-    // Extras
     for (const extraId of selectedExtras) {
       const extra = EXTRA_OPTIONS[extraId];
       if (!extra) continue;
       for (const slot of extra.slots) {
-        result.push({
-          slotId: slot.id,
-          label: slot.label,
-          functionId: slot.function,
-          output: outputOverrides.get(slot.id) ?? slot.defaultOutput,
-          category: slot.category,
-        });
+        result.push({ functionId: slot.function, output: slot.defaultOutput });
       }
     }
 
     return result;
-  }, [selectedPreset, selectedExtras, outputOverrides]);
+  }, [selectedPreset, selectedExtras]);
+
+  // ── Actions ────────────────────────────────────────────────────────
 
   const handleToggleExtra = useCallback((id: string) => {
     setSelectedExtras((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
-  }, []);
-
-  const handleChangeOutput = useCallback((slotId: string, output: number) => {
-    setOutputOverrides((prev) => {
-      const next = new Map(prev);
-      next.set(slotId, output);
-      return next;
-    });
+    setUserModified(true);
+    setApplied(false);
   }, []);
 
   const handleApply = useCallback(() => {
     if (!selectedPreset) return;
 
-    // First, clear all SERVO functions to Disabled
+    // Build the full param set in one object, then stage atomically.
+    // Using stageParams (not setParamLocal) so that values matching the FC
+    // originals still get staged as dirty -- the user explicitly chose this config.
+    const params: Record<string, number> = {};
+
+    // Zero all servo functions first
     for (let i = 1; i <= 16; i++) {
-      setParamLocal(`SERVO${i}_FUNCTION`, 0);
+      params[`SERVO${i}_FUNCTION`] = 0;
     }
 
-    // Apply mappings
+    // Overlay the new mappings
     for (const m of mappings) {
-      setParamLocal(`SERVO${m.output}_FUNCTION`, m.functionId);
+      params[`SERVO${m.output}_FUNCTION`] = m.functionId;
     }
 
-    // Apply additional params (FRAME_CLASS, Q_ENABLE, etc.)
+    // Frame-identifying params (FRAME_CLASS/TYPE for copters, Q_* for VTOLs)
     if (selectedPreset.additionalParams) {
       for (const [key, value] of Object.entries(selectedPreset.additionalParams)) {
-        setParamLocal(key, value);
+        params[key] = value;
       }
     }
 
-    setStep('done');
-  }, [selectedPreset, mappings, setParamLocal]);
+    stageParams(params);
+    setApplied(true);
+  }, [selectedPreset, mappings, stageParams]);
 
-  // Check for output conflicts
-  const hasConflicts = useMemo(() => {
-    const used = new Map<number, number>();
-    for (const m of mappings) {
-      used.set(m.output, (used.get(m.output) || 0) + 1);
+  const presets = AIRFRAME_PRESETS.filter((p) => p.category === categoryTab);
+  const availableExtras = selectedPreset
+    ? selectedPreset.availableExtras.map((id) => EXTRA_OPTIONS[id]).filter(Boolean)
+    : [];
+
+  // Group copter presets by FRAME_CLASS for category drill-down
+  const copterCategories = useMemo(() => {
+    if (categoryTab !== 'copter') return [];
+    const groups = new Map<number, { name: string; presets: AirframePreset[] }>();
+    const classNames: Record<number, string> = {
+      1: 'Quad', 2: 'Hexa', 3: 'Octa', 4: 'OctaQuad', 5: 'Y6', 7: 'Tricopter',
+    };
+    const classDescriptions: Record<number, string> = {
+      1: '4 motors',
+      2: '6 motors, 6 arms',
+      3: '8 motors, 8 arms',
+      4: '8 motors, 4 arms (coaxial)',
+      5: '6 motors, 3 arms (coaxial)',
+      7: '3 motors + yaw servo',
+    };
+    const classOrder = [1, 2, 3, 4, 5, 7];
+
+    for (const p of presets) {
+      const fc = p.additionalParams?.FRAME_CLASS;
+      if (fc === undefined) continue;
+      if (!groups.has(fc)) {
+        groups.set(fc, { name: classNames[fc] || `Class ${fc}`, presets: [] });
+      }
+      groups.get(fc)!.presets.push(p);
     }
-    return Array.from(used.values()).some((count) => count > 1);
-  }, [mappings]);
 
-  const canProceed = () => {
-    switch (step) {
-      case 'airframe': return selectedPreset !== null;
-      case 'extras': return true;
-      case 'outputs': return !hasConflicts;
-      default: return false;
+    return classOrder
+      .filter(fc => groups.has(fc))
+      .map(fc => ({
+        frameClass: fc,
+        name: groups.get(fc)!.name,
+        description: classDescriptions[fc] || '',
+        presets: groups.get(fc)!.presets,
+        representative: groups.get(fc)!.presets[0],
+      }));
+  }, [presets, categoryTab]);
+
+  // Current copter variants (when drilled into a category)
+  const activeCopterCat = useMemo(() => {
+    if (!copterCategory) return null;
+    return copterCategories.find(c => String(c.frameClass) === copterCategory) ?? null;
+  }, [copterCategory, copterCategories]);
+
+  const copterVariants = activeCopterCat?.presets ?? [];
+
+  // ── Default output summary for wiring section ─────────────────────
+
+  const defaultOutputSummary = useMemo(() => {
+    if (!selectedPreset) return [];
+
+    const items: { label: string; output: number; detail?: string }[] = [];
+
+    for (const m of selectedPreset.motorTemplate.vtolMotors) {
+      items.push({
+        label: `Motor ${m.number}`,
+        output: m.defaultOutput,
+        detail: m.rotation,
+      });
     }
-  };
 
-  const nextStep = () => {
-    switch (step) {
-      case 'airframe': setStep('extras'); break;
-      case 'extras': setStep('outputs'); break;
-      case 'outputs': handleApply(); break;
+    for (const fm of selectedPreset.motorTemplate.forwardMotors) {
+      items.push({ label: fm.label, output: fm.defaultOutput });
     }
-  };
 
-  const prevStep = () => {
-    switch (step) {
-      case 'extras': setStep('airframe'); break;
-      case 'outputs': setStep('extras'); break;
-      case 'done': setStep('outputs'); break;
+    if (selectedPreset.planeTemplate) {
+      for (const s of selectedPreset.planeTemplate.surfaces) {
+        items.push({ label: s.label, output: s.defaultOutput });
+      }
     }
-  };
 
-  const stepIndex = { airframe: 0, extras: 1, outputs: 2, done: 3 }[step];
+    return items;
+  }, [selectedPreset]);
+
+  // ── Main render ────────────────────────────────────────────────────
 
   return (
-    <div className="w-full space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Frame Wizard</h2>
-          <p className="text-base text-muted">
-            Configure your airframe type, extras, and output assignments.
-          </p>
-        </div>
-        <button onClick={handleClose}
-          className="btn btn-ghost text-base text-muted">
-          <Wrench size={12} />
-          Skip to Manual Setup
-        </button>
+    <div className="flex h-full flex-col gap-5 overflow-y-auto p-8">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Frame</h1>
+        <p className="text-sm text-muted">
+          Select your airframe and configure options.
+        </p>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {['Airframe', 'Extras', 'Outputs', 'Done'].map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
-              i < stepIndex
-                ? 'bg-accent text-white'
-                : i === stepIndex
-                ? 'bg-accent/20 text-accent border-2 border-accent'
-                : 'bg-surface-2 text-subtle'
-            }`}>
-              {i < stepIndex ? <Check size={12} /> : i + 1}
-            </div>
-            <span className={`text-sm ${i === stepIndex ? 'font-semibold text-foreground' : 'text-subtle'}`}>
-              {label}
-            </span>
-            {i < 3 && <ChevronRight size={12} className="text-subtle" />}
-          </div>
-        ))}
-      </div>
-
-      {/* === STEP CONTENT === */}
-
-      {/* Step 1: Airframe */}
-      {step === 'airframe' && (
-        <div className="space-y-4">
-          {/* Category tabs -- filtered by firmware */}
-          <div className="flex gap-1 rounded-lg bg-surface-1 p-1">
-            {([
-              { id: 'plane' as const, label: 'Plane', icon: Plane, firmware: ['plane', 'quadplane'] },
-              { id: 'copter' as const, label: 'Copter', icon: Cpu, firmware: ['copter'] },
-              { id: 'vtol' as const, label: 'VTOL', icon: Rocket, firmware: ['plane', 'quadplane'] },
-            ])
-              .filter(({ firmware }) => !vehicleType || firmware.includes(vehicleType))
-              .map(({ id, label, icon: Icon }) => (
+      {/* === Section 1: Frame Selection === */}
+      <Section title="Airframe" number={1} enabled={true}>
+        <div className="mb-4 flex gap-1 rounded bg-surface-0 p-1">
+          {([
+            { id: 'plane' as const, label: 'Plane', icon: Plane, firmware: ['plane', 'quadplane'] },
+            { id: 'copter' as const, label: 'Copter', icon: Cpu, firmware: ['copter'] },
+            { id: 'vtol' as const, label: 'VTOL', icon: Rocket, firmware: ['plane', 'quadplane'] },
+          ])
+            .filter(({ firmware }) => !vehicleType || firmware.includes(vehicleType))
+            .map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => {
                   setCategoryTab(id);
-                  setSelectedPreset(null); // Reset selection when changing tab
+                  setCopterCategory(null);
+                  if (selectedPreset && selectedPreset.category !== id) {
+                    setSelectedPreset(null);
+                    setApplied(false);
+                  }
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-semibold transition ${
                   categoryTab === id
-                    ? 'bg-surface-0 text-foreground shadow-sm'
+                    ? 'bg-surface-1 text-foreground shadow-sm'
                     : 'text-muted hover:text-foreground'
                 }`}
               >
@@ -711,105 +471,279 @@ export function FrameWizard({ onClose, onDirtyChange }: { onClose: () => void; o
                 {label}
               </button>
             ))}
+        </div>
+
+        {/* Copter: category drill-down */}
+        {categoryTab === 'copter' && !copterCategory && (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {copterCategories.map((cat) => {
+              const isCurrent = detectedPreset && cat.presets.some(p => p.id === detectedPreset.id);
+              const isSelectedInCat = selectedPreset && cat.presets.some(p => p.id === selectedPreset.id);
+              return (
+                <button
+                  key={cat.frameClass}
+                  onClick={() => {
+                    if (cat.presets.length === 1) {
+                      handleSelectPreset(cat.presets[0]);
+                    } else {
+                      setCopterCategory(String(cat.frameClass));
+                    }
+                  }}
+                  className={`group relative flex flex-col items-center gap-3 rounded border-2 p-5 text-center transition ${
+                    isSelectedInCat
+                      ? 'border-accent bg-accent/10'
+                      : isCurrent && !selectedPreset
+                        ? 'border-success/50 bg-success/5'
+                        : 'border-border bg-surface-0 hover:border-accent/50 hover:bg-surface-2'
+                  }`}
+                >
+                  {isCurrent && (
+                    <span className={`absolute top-2 right-2 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                      isSelectedInCat || !selectedPreset
+                        ? 'bg-success-muted/60 border-success/30 text-success'
+                        : 'bg-surface-2/60 border-border text-subtle'
+                    }`}>
+                      <Check size={10} />
+                      Active
+                    </span>
+                  )}
+                  <AirframeIcon preset={cat.representative} size={120} selected={!!isSelectedInCat} />
+                  <div>
+                    <p className={`text-sm font-bold ${isSelectedInCat ? 'text-accent' : 'text-foreground'}`}>
+                      {cat.name}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted leading-snug">{cat.description}</p>
+                    {cat.presets.length > 1 && (
+                      <p className="mt-1 text-xs text-accent">{cat.presets.length} variants ›</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Copter: variant grid with pinned category card (Option B) */}
+        {categoryTab === 'copter' && copterCategory && activeCopterCat && (
+          <>
+            {/* Pinned category card -- shows which frame class the user is inside */}
+            <div className="mb-2 flex items-center gap-3 rounded border-2 border-accent bg-surface-0 px-4 py-3">
+              <AirframeIcon preset={activeCopterCat.representative} size={48} selected={true} />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-accent">{activeCopterCat.name}</p>
+                <p className="text-xs text-muted">
+                  {activeCopterCat.description} -- choose a layout variant below
+                </p>
+              </div>
+              <button
+                onClick={() => setCopterCategory(null)}
+                className="flex items-center gap-1.5 rounded border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:text-foreground transition"
+              >
+                <ArrowLeft size={12} />
+                All Frames
+              </button>
+            </div>
+
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted">
+              Select variant
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {copterVariants.map((p) => {
+                const isSelected = selectedPreset?.id === p.id;
+                const isCurrent = p.id === detectedPreset?.id;
+                const showCurrentHighlight = isCurrent && !selectedPreset;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelectPreset(p)}
+                    className={`group relative flex flex-col items-center gap-3 rounded border-2 p-5 text-center transition ${
+                      isSelected
+                        ? 'border-accent bg-accent/10'
+                        : showCurrentHighlight
+                          ? 'border-success/50 bg-success/5'
+                          : 'border-border bg-surface-0 hover:border-accent/50 hover:bg-surface-2'
+                    }`}
+                  >
+                    {isCurrent && (
+                      <span className={`absolute top-2 right-2 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        isSelected || !selectedPreset
+                          ? 'bg-success-muted/60 border-success/30 text-success'
+                          : 'bg-surface-2/60 border-border text-subtle'
+                      }`}>
+                        <Check size={10} />
+                        Active
+                      </span>
+                    )}
+                    <AirframeIcon preset={p} size={120} selected={isSelected} />
+                    <div>
+                      <p className={`text-sm font-bold ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                        {p.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted leading-snug">{p.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Plane / VTOL: flat grid (no drill-down) */}
+        {categoryTab !== 'copter' && (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {presets.map((p) => {
+              const isSelected = selectedPreset?.id === p.id;
+              const isCurrent = p.id === detectedPreset?.id;
+              const showCurrentHighlight = isCurrent && !selectedPreset;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handleSelectPreset(p)}
+                  className={`group relative flex flex-col items-center gap-3 rounded border-2 p-5 text-center transition ${
+                    isSelected
+                      ? 'border-accent bg-accent/10'
+                      : showCurrentHighlight
+                        ? 'border-success/50 bg-success/5'
+                        : 'border-border bg-surface-0 hover:border-accent/50 hover:bg-surface-2'
+                  }`}
+                >
+                  {isCurrent && (
+                    <span className={`absolute top-2 right-2 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                      isSelected || !selectedPreset
+                        ? 'bg-success-muted/60 border-success/30 text-success'
+                        : 'bg-surface-2/60 border-border text-subtle'
+                    }`}>
+                      <Check size={10} />
+                      Active
+                    </span>
+                  )}
+                  <AirframeIcon preset={p} size={120} selected={isSelected} />
+                  <div>
+                    <p className={`text-sm font-bold ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                      {p.name}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted leading-snug">{p.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {selectedPreset && (
+          <div className="mt-4 rounded border border-accent/30 bg-accent/5 px-4 py-3">
+            <p className="text-sm font-medium text-accent">{selectedPreset.name}</p>
+            <p className="mt-0.5 text-xs text-muted">{selectedPreset.description}</p>
+            <p className="mt-1 text-xs text-subtle">
+              Surfaces: {selectedPreset.planeTemplate?.surfaces.length ?? 0} •{' '}
+              Motors: {selectedPreset.motorTemplate.forwardMotors.length + selectedPreset.motorTemplate.vtolMotors.length} •{' '}
+              Extras: {selectedPreset.availableExtras.length}
+            </p>
+          </div>
+        )}
+      </Section>
+
+      {/* === Section 2: Options === */}
+      <Section title="Options" number={2} enabled={selectedPreset !== null} defaultOpen={true}>
+        {availableExtras.length === 0 ? (
+          <p className="py-4 text-center text-sm text-subtle">
+            No additional options for this airframe.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {availableExtras.map((extra) => {
+              const isOn = selectedExtras.has(extra.id);
+              return (
+                <button
+                  key={extra.id}
+                  onClick={() => handleToggleExtra(extra.id)}
+                  className={`flex items-start gap-3 rounded border-2 px-4 py-3 text-left transition ${
+                    isOn
+                      ? 'border-accent bg-accent/10'
+                      : 'border-border bg-surface-0 hover:border-accent/50'
+                  }`}
+                >
+                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                    isOn ? 'border-accent bg-accent text-white' : 'border-subtle'
+                  }`}>
+                    {isOn && <Check size={12} />}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-bold ${isOn ? 'text-accent' : 'text-foreground'}`}>
+                      {extra.label}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted">{extra.description}</p>
+                    <p className="mt-1 text-xs text-subtle">
+                      Adds: {extra.slots.map((s) => s.label).join(', ')}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
+      {/* === Section 3: Suggested Wiring (read-only) === */}
+      <Section title="Suggested Wiring" number={3} enabled={selectedPreset !== null} defaultOpen={true}>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            {selectedPreset && <SuggestedWiringDiagram preset={selectedPreset} />}
           </div>
 
-          <AirframeGrid
-            category={categoryTab}
-            selected={selectedPreset}
-            currentId={detectedPreset?.id ?? null}
-            onSelect={(p) => {
-              handleSelectPreset(p);
-              setSelectedExtras(new Set());
-              setOutputOverrides(new Map());
-            }}
-          />
+          <div>
+            <p className="mb-3 text-sm text-muted">
+              Default output mapping for this configuration.
+              These will be applied when you click "Apply Frame Configuration" below.
+            </p>
 
-          {selectedPreset && (
-            <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
-              <p className="text-sm font-medium text-accent">{selectedPreset.name}</p>
-              <p className="mt-0.5 text-base text-muted">{selectedPreset.description}</p>
-              <p className="mt-1 text-[15px] text-subtle">
-                Surfaces: {selectedPreset.planeTemplate?.surfaces.length ?? 0} •
-                Motors: {selectedPreset.motorTemplate.forwardMotors.length + selectedPreset.motorTemplate.vtolMotors.length} •
-                Available extras: {selectedPreset.availableExtras.length}
-              </p>
+            <div className="space-y-1.5">
+              {defaultOutputSummary.map((item) => (
+                <div
+                  key={`${item.label}-${item.output}`}
+                  className="flex items-center justify-between rounded border border-border/50 bg-surface-0 px-3 py-2"
+                >
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
+                  <div className="flex items-center gap-2">
+                    {item.detail && (
+                      <span className={`text-xs font-mono font-bold ${
+                        item.detail === 'CCW' ? 'text-blue-400' : 'text-red-400'
+                      }`}>
+                        {item.detail}
+                      </span>
+                    )}
+                    <span className="rounded bg-surface-2 px-2 py-0.5 font-mono text-xs font-bold text-muted">
+                      Out {item.output}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        </div>
+      </Section>
+
+      {/* Apply button -- visible only when user has unapplied changes */}
+      {selectedPreset && userModified && !applied && (
+        <div className="flex items-center justify-end gap-3 rounded border border-border bg-surface-1 px-5 py-4">
+          <button onClick={handleApply} className="btn btn-primary gap-1.5 text-sm">
+            <Save size={14} />
+            Apply Frame Configuration
+          </button>
         </div>
       )}
 
-      {/* Step 2: Extras */}
-      {step === 'extras' && selectedPreset && (
-        <ExtrasStep
-          preset={selectedPreset}
-          selectedExtras={selectedExtras}
-          onToggle={handleToggleExtra}
-        />
-      )}
-
-      {/* Step 3: Outputs */}
-      {step === 'outputs' && selectedPreset && (
-        <OutputsStep
-          preset={selectedPreset}
-          mappings={mappings}
-          onChangeOutput={handleChangeOutput}
-        />
-      )}
-
-      {/* Done */}
-      {step === 'done' && (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-900/30">
-            <Check size={32} className="text-green-500" />
+      {/* Applied confirmation */}
+      {applied && (
+        <div className="rounded border border-emerald-500/30 bg-emerald-500/5 px-5 py-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-emerald-400">
+            <Check size={18} />
+            <span className="font-semibold">Configuration applied</span>
           </div>
-          <h3 className="mt-4 text-3xl font-extrabold text-foreground tracking-tight">Configuration Applied</h3>
-          <p className="mt-1 text-lg text-muted">
-            All servo functions and frame parameters have been set.
-          </p>
-          <p className="mt-3 text-[15px] text-subtle">
+          <p className="mt-1 text-sm text-muted">
             Changes are staged locally. Click <strong>Save to FC</strong> in the footer to write them to the flight controller.
           </p>
-          <div className="mt-6 flex gap-3">
-            <button onClick={onClose} className="btn btn-primary gap-1.5 text-sm">
-              <Check size={14} />
-              Continue to Motors &amp; Servos
-            </button>
-            <button onClick={() => setStep('outputs')} className="btn btn-ghost text-sm">
-              Go Back &amp; Adjust
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation buttons */}
-      {step !== 'done' && (
-        <div className="flex items-center justify-between border-t border-border pt-4">
-          <button
-            onClick={prevStep}
-            disabled={step === 'airframe'}
-            className="btn btn-ghost gap-1 text-sm"
-          >
-            <ChevronLeft size={14} />
-            Back
-          </button>
-
-          <button
-            onClick={nextStep}
-            disabled={!canProceed()}
-            className="btn btn-primary gap-1 text-sm"
-          >
-            {step === 'outputs' ? (
-              <>
-                <Check size={14} />
-                Apply Configuration
-              </>
-            ) : (
-              <>
-                Next
-                <ChevronRight size={14} />
-              </>
-            )}
-          </button>
         </div>
       )}
     </div>

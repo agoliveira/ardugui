@@ -60,6 +60,7 @@ import {
   MavParamType,
   MavResult,
   MAV_CMD_PREFLIGHT_CALIBRATION,
+  MAV_CMD_PREFLIGHT_STORAGE,
   MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
   MAV_CMD_DO_START_MAG_CAL,
   MAV_CMD_DO_ACCEPT_MAG_CAL,
@@ -726,8 +727,23 @@ export class ConnectionManager {
       await this.requestTelemetryStreams();
       await delay(200);
       await this.requestAutopilotVersion();
+      await delay(500);
+      await this.maybeAutoBackup();
     } catch (err) {
       console.warn('Post-connect tasks error:', err);
+    }
+  }
+
+  private async maybeAutoBackup() {
+    try {
+      const { getAutoBackupPref, runAutoBackup } = await import('../utils/autoBackup');
+      const pref = await getAutoBackupPref();
+      if (pref === 'enabled') {
+        await runAutoBackup();
+      }
+      // 'unset' and 'disabled' -- do nothing here; UI handles the first-time prompt
+    } catch (err) {
+      console.warn('Auto-backup failed:', err);
     }
   }
 
@@ -888,6 +904,16 @@ export class ConnectionManager {
     console.log(`FC: ${msg}`);
     this.statusMessages.push(msg);
     if (this.statusMessages.length > 50) this.statusMessages.shift();
+
+    // Parse firmware version from banner (e.g. "ArduCopter V4.5.7 (b28f0c3c)")
+    const versionMatch = st.text.match(/(?:ArduCopter|ArduPlane|ArduRover|ArduSub)\s+V(\d+\.\d+\.\d+)/i);
+    if (versionMatch) {
+      const vehicleStore = useVehicleStore.getState();
+      if (!vehicleStore.firmwareVersion || vehicleStore.firmwareVersion === '-') {
+        vehicleStore.setFirmwareVersion(versionMatch[1]);
+        console.log(`Firmware version from STATUSTEXT: ${versionMatch[1]}`);
+      }
+    }
 
     // Forward to calibration store when accel cal is active,
     // but only if the message is calibration-related. The FC also sends
@@ -1233,6 +1259,15 @@ export class ConnectionManager {
     return this.sendCommandWithAck(MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 1, 0, 0, 0, 0, 0, 0, 5000);
   }
 
+  /**
+   * Reset all parameters to firmware defaults.
+   * MAV_CMD_PREFLIGHT_STORAGE param1=2 tells the FC to reset params.
+   * The FC should be rebooted after this to pick up the defaults.
+   */
+  async resetToDefaults(): Promise<number> {
+    return this.sendCommandWithAck(MAV_CMD_PREFLIGHT_STORAGE, 2, 0, 0, 0, 0, 0, 0, 10000);
+  }
+
   // --- Vehicle Detection ---
 
   private vehicleTypeDetected: boolean = false;
@@ -1347,7 +1382,18 @@ export class ConnectionManager {
 
   private handleAutopilotVersion(packet: MavLinkPacket) {
     const av = parseAutopilotVersion(packet.payload);
-    console.log(`AUTOPILOT_VERSION: boardVersion=${av.boardVersion} vendor=${av.vendorId} product=${av.productId}`);
+    console.log(`AUTOPILOT_VERSION: boardVersion=${av.boardVersion} vendor=${av.vendorId} product=${av.productId} flightSw=0x${av.flightSwVersion.toString(16)}`);
+
+    // Extract firmware version from flightSwVersion (encoded as major.minor.patch.type)
+    const vehicleStore = useVehicleStore.getState();
+    if (!vehicleStore.firmwareVersion && av.flightSwVersion > 0) {
+      const major = (av.flightSwVersion >> 24) & 0xFF;
+      const minor = (av.flightSwVersion >> 16) & 0xFF;
+      const patch = (av.flightSwVersion >> 8) & 0xFF;
+      const versionStr = `${major}.${minor}.${patch}`;
+      vehicleStore.setFirmwareVersion(versionStr);
+      console.log(`Firmware version from AUTOPILOT_VERSION: ${versionStr}`);
+    }
 
     // STATUSTEXT contains the actual firmware target name (e.g. "MatekF405-TE-bdshot")
     // and is more reliable than board_version, which can be inherited from a parent hwdef.

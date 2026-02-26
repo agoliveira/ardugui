@@ -19,8 +19,9 @@ import { NavigationPage } from '@/pages/Navigation/NavigationPage';
 import { FailsafesPage } from '@/pages/Failsafes/FailsafesPage';
 import { OSDPage } from '@/pages/OSD/OSDPage';
 import { CalibrationPage } from '@/pages/Calibration/CalibrationPage';
+import { BackupsPage } from '@/pages/Backups/BackupsPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
-import { DebugConsole } from '@/components/DebugConsole';
+import { ExpertPage } from '@/pages/Expert/ExpertPage';
 import { useDebugStore } from '@/store/debugStore';
 
 export type PageId =
@@ -37,7 +38,9 @@ export type PageId =
   | 'failsafes'
   | 'osd'
   | 'transitions'
-  | 'cli';
+  | 'backups'
+  | 'cli'
+  | 'expert';
 
 export function Layout() {
   const [activePage, setActivePage] = useState<PageId>('connect');
@@ -48,7 +51,7 @@ export function Layout() {
   const prevStatus = useRef(connectionStatus);
   const didAutoRedirect = useRef(false);
 
-  // Track whether the frame wizard has unsaved work
+  // Track whether the frame page has unsaved work
   const wizardDirty = useRef(false);
   const handleWizardDirtyChange = useCallback((dirty: boolean) => {
     wizardDirty.current = dirty;
@@ -88,7 +91,7 @@ export function Layout() {
     prevStatus.current = connectionStatus;
   }, [connectionStatus]);
 
-  // Auto-redirect to frame wizard if unconfigured (once per connection)
+  // Auto-redirect to frame page if unconfigured (once per connection)
   useEffect(() => {
     if (
       connectionStatus === 'connected' &&
@@ -173,17 +176,26 @@ export function Layout() {
   const paramsLoaded = useParameterStore((s) => s.loaded);
   const debugEnabled = useDebugStore((s) => s.enabled);
   const visiblePages = useMemo(() => {
+    // Only show full nav after params are loaded (status === 'connected')
+    if (connectionStatus !== 'connected') return ['connect'];
     const params = useParameterStore.getState().parameters;
     const hasOsd = params.has('OSD_TYPE');
-    return getVisiblePages(vehicleType, { hasOsd });
-  }, [vehicleType, paramsLoaded]);
+    return getVisiblePages(vehicleType, { hasOsd, expertMode: debugEnabled });
+  }, [vehicleType, paramsLoaded, connectionStatus, debugEnabled]);
 
-  // Navigation with dirty guard -- warns if leaving frame wizard with unsaved work
+  // Redirect if the active page is no longer visible (e.g. expert mode toggled off)
+  useEffect(() => {
+    if (visiblePages.length > 0 && !visiblePages.includes(activePage)) {
+      setActivePage('connect');
+    }
+  }, [visiblePages, activePage]);
+
+  // Navigation with dirty guard -- warns if leaving frame page with unsaved work
   const handlePageChange = useCallback(
     (page: PageId) => {
       if (!visiblePages.includes(page)) return;
 
-      // If leaving the frame wizard with unsaved work, confirm
+      // If leaving the frame page with unsaved work, confirm
       if (activePage === 'frame' && page !== 'frame' && wizardDirty.current) {
         const confirmed = window.confirm(
           'You have unsaved frame configuration. Are you sure you want to leave? Your changes will be lost.'
@@ -204,11 +216,8 @@ export function Layout() {
       case 'frame':
         return (
           <FrameWizardPage
-            onNavigate={(page) => {
-              wizardDirty.current = false;
-              setActivePage(page);
-            }}
             onDirtyChange={handleWizardDirtyChange}
+            onNavigate={(page) => handlePageChange(page as PageId)}
           />
         );
       case 'ports':
@@ -233,6 +242,10 @@ export function Layout() {
         return <OSDPage />;
       case 'cli':
         return <CLIPage />;
+      case 'backups':
+        return <BackupsPage />;
+      case 'expert':
+        return <ExpertPage />;
       default:
         return <PlaceholderPage pageId={activePage} />;
     }
@@ -242,6 +255,8 @@ export function Layout() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
+      {/* Top accent stripe -- ArduGUI signature */}
+      <div className="h-[2px] shrink-0 bg-accent" />
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -250,17 +265,16 @@ export function Layout() {
           onPageChange={handlePageChange}
           isConnected={connectionStatus === 'connected'}
         />
-        <main className="flex-1 overflow-y-auto bg-background px-8 py-6">
+        <main className="flex-1 overflow-y-auto bg-background px-4 py-3">
           {renderPage()}
         </main>
       </div>
-      {debugEnabled && <DebugConsole />}
       <Footer />
 
       {/* Reboot-reconnect overlay -- lives in Layout so it persists across page changes */}
       {rebootProgress && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 rounded-2xl bg-surface border border-border px-10 py-8 shadow-2xl max-w-sm text-center">
+          <div className="flex flex-col items-center gap-4 rounded bg-surface border border-border px-10 py-8 shadow-2xl max-w-sm text-center">
             {rebootProgress.phase === 'countdown' ? (
               <>
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">

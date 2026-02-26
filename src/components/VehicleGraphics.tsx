@@ -4,8 +4,8 @@
  * GOLDEN RULE: ONE icon set throughout the app. Every aircraft uses the
  * AirframeIcons shapes (solid fills, airport-signage style).
  *
- * COLOR RULE: BRIGHT, SATURATED, HIGH CONTRAST against #0a0f1a backgrounds.
- *   amber #f59e0b = port (left)
+ * COLOR RULE: BRIGHT, SATURATED, HIGH CONTRAST against #0c0b0a backgrounds.
+ *   marigold #ffaa2a = port (left)
  *   cyan  #22d3ee = starboard (right)
  *   green #4ade80 = nose
  *   purple #a78bfa = tail
@@ -32,7 +32,7 @@ import {
 export const VC = {
   body: '#cbd5e1',         // bright slate -- VISIBLE against dark bg
   bodyDim: '#94a3b8',
-  port: '#f59e0b',         // amber -- left (BRIGHT)
+  port: '#ffaa2a',         // marigold -- left (BRIGHT)
   starboard: '#22d3ee',    // cyan -- right (BRIGHT)
   nose: '#4ade80',         // green -- front
   tail: '#a78bfa',         // purple -- rear
@@ -40,8 +40,8 @@ export const VC = {
   ccw: '#38bdf8',          // motor CCW (sky)
   ground: '#64748b',       // ground line
   neutral: '#cbd5e1',      // neutral elements
-  bg: '#0a0f1a',           // diagram background
-  bgStroke: '#1e3050',     // diagram border
+  bg: '#13120f',           // diagram background
+  bgStroke: '#2a2622',     // diagram border
 };
 
 
@@ -57,13 +57,14 @@ interface MotorDef {
 }
 
 export function CopterMotorDiagram({
-  motors, frameName, testingMotor, enabled, onMotorClick,
+  motors, frameName, testingMotor, enabled, onMotorClick, isHFrame = false,
 }: {
   motors: MotorDef[];
   frameName: string;
   testingMotor: number | null;
   enabled: boolean;
   onMotorClick: (n: number) => void;
+  isHFrame?: boolean;
 }) {
   const { cx, cy, armLen, motorR, armW } = QUAD;
 
@@ -80,8 +81,32 @@ export function CopterMotorDiagram({
       <text x={cx} y="19" textAnchor="middle" fill={VC.nose} fontSize="4.5"
         fontFamily="ui-monospace, monospace" fontWeight="800">FRONT</text>
 
-      {/* Arms -- colored by side (L/R) */}
-      {motors.map((m) => {
+      {/* Arms -- colored by side (L/R), with H-frame geometry if applicable */}
+      {isHFrame && motors.length === 4 ? (() => {
+        const mpos = motors.map(m => ({
+          mx: cx + m.x * armLen,
+          my: cy - m.y * armLen,
+          origX: m.x,
+        }));
+        const left = mpos.filter(p => p.origX < 0);
+        const right = mpos.filter(p => p.origX > 0);
+        const leftF = left.reduce((a, b) => a.my < b.my ? a : b);
+        const leftR = left.reduce((a, b) => a.my > b.my ? a : b);
+        const rightF = right.reduce((a, b) => a.my < b.my ? a : b);
+        const rightR = right.reduce((a, b) => a.my > b.my ? a : b);
+        return (
+          <>
+            <line x1={leftF.mx} y1={leftF.my} x2={leftR.mx} y2={leftR.my}
+              stroke={VC.port} strokeWidth={armW * 2} strokeLinecap="round" opacity="0.5" />
+            <line x1={rightF.mx} y1={rightF.my} x2={rightR.mx} y2={rightR.my}
+              stroke={VC.starboard} strokeWidth={armW * 2} strokeLinecap="round" opacity="0.5" />
+            <line
+              x1={(leftF.mx + leftR.mx) / 2} y1={(leftF.my + leftR.my) / 2}
+              x2={(rightF.mx + rightR.mx) / 2} y2={(rightF.my + rightR.my) / 2}
+              stroke={VC.neutral} strokeWidth={armW * 2} strokeLinecap="round" opacity="0.4" />
+          </>
+        );
+      })() : motors.map((m) => {
         const mx = cx + m.x * armLen;
         const my = cy - m.y * armLen;
         const isLeft = m.x < 0;
@@ -93,27 +118,27 @@ export function CopterMotorDiagram({
       })}
 
       {/* Body */}
-      <rect x={cx - 10} y={cy - 8} width={20} height={16} rx={5}
-        fill="#1e293b" stroke={VC.neutral} strokeWidth="1.5" />
+      <rect x={cx - 7} y={cy - 6} width={14} height={12} rx={2}
+        fill="#201e1a" stroke={VC.neutral} strokeWidth="1.5" />
 
       {/* Nose arrow on body */}
-      <polygon points={`${cx},${cy - 16} ${cx - 5},${cy - 8} ${cx + 5},${cy - 8}`}
+      <polygon points={`${cx},${cy - 12} ${cx - 3.5},${cy - 6} ${cx + 3.5},${cy - 6}`}
         fill={VC.nose} opacity="0.6" />
 
-      {/* Motors -- ring + rotation arc + number */}
+      {/* Motors -- clean ring + rotation arc + number */}
       {motors.map((m) => {
         const mx = cx + m.x * armLen;
         const my = cy - m.y * armLen;
         const isTesting = testingMotor === m.number;
-        const color = isTesting ? '#fbbf24' : m.rotation === 'CCW' ? VC.ccw : VC.cw;
+        const color = isTesting ? '#ffcc66' : m.rotation === 'CCW' ? VC.ccw : VC.cw;
         const dimmed = !enabled && !isTesting;
         const r = motorR;
         const isCW = m.rotation === 'CW';
 
         // Rotation arrow arc
-        const arcR = r - 1.5;
-        const startAngle = isCW ? -110 : 110;
-        const endAngle = isCW ? 110 : -110;
+        const arcR = r - 2;
+        const startAngle = isCW ? -100 : 100;
+        const endAngle = isCW ? 100 : -100;
         const sa = (startAngle * Math.PI) / 180;
         const ea = (endAngle * Math.PI) / 180;
         const sx = mx + arcR * Math.cos(sa);
@@ -137,16 +162,19 @@ export function CopterMotorDiagram({
             className={enabled ? 'cursor-pointer' : 'cursor-not-allowed'}
             onClick={() => enabled && onMotorClick(m.number)}
             opacity={dimmed ? 0.35 : 1}>
-            <circle cx={mx} cy={my} r={r} fill={color} opacity="0.15"
-              stroke={color} strokeWidth={3} />
+            {/* Motor ring -- clean, no fill */}
+            <circle cx={mx} cy={my} r={r} fill={VC.bg} stroke={color} strokeWidth={2} />
+            {/* Rotation arc */}
             <path d={`M ${sx},${sy} A ${arcR},${arcR} 0 1,${sweepFlag} ${ex},${ey}`}
-              fill="none" stroke={color} strokeWidth="1.2" opacity="0.6" />
+              fill="none" stroke={color} strokeWidth="1" opacity="0.5" />
             <polygon points={`${tipX},${tipY} ${b1X},${b1Y} ${b2X},${b2Y}`}
-              fill={color} opacity="0.7" />
+              fill={color} opacity="0.5" />
+            {/* Number */}
             <circle cx={mx} cy={my} r={4} fill={color} />
             <text x={mx} y={my + 1.5} textAnchor="middle" dominantBaseline="central"
               fill={isTesting ? '#000' : '#f1f5f9'} fontSize="7" fontWeight="900"
               fontFamily="ui-monospace, monospace">{m.number}</text>
+            {/* Rotation label */}
             <text x={mx} y={my + r + 5} textAnchor="middle" fill={color} fontSize="4"
               fontFamily="ui-monospace, monospace" fontWeight="700">{m.rotation}</text>
           </g>

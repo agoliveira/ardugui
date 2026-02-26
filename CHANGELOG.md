@@ -18,6 +18,16 @@ This project is in **pre-alpha** and does not yet follow semantic versioning. Ve
 - Parameter write-back to FC with review dialog, dirty indicators, and revert support
 - Dark theme with CSS custom properties (amber accent, high-contrast surfaces)
 
+### Visual Identity -- "Forge" (v6)
+- Complete palette: warm charcoal backgrounds (#0c0b0a family) + marigold accent (#ffaa2a)
+- Utilitarian interface: flat buttons, 3-4px radii, no gradients/shadows, tight spacing
+- Compact header (40px), slim footer (28px), narrow sidebar (160px) with VS Code-style active indicator
+- Differentiated from ArduDeck (navy+amber), Betaflight (gray+yellow), INAV (light+green), QGC (dark+purple)
+- All accent/text combinations pass WCAG AA contrast ratios for outdoor/older-user readability
+- Reworked airframe icons: thin line-art copters with motor-count scaling, slimmer plane silhouettes
+- Fixed H-frame motor positions (was showing as X, now correctly wider horizontal arms)
+- Updated all hardcoded colors across 15+ components (SVGs, Three.js scenes, Tailwind classes, hex values)
+
 ### Board Support
 - Auto-detection of 50+ flight controller boards from USB vendor/product IDs and APJ_BOARD_ID
 - Interactive board diagram showing ports, pins, sensors, and peripherals

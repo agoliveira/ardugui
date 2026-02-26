@@ -79,7 +79,7 @@ export function CLIPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto rounded-lg border border-border">
+        <div className="flex-1 overflow-auto rounded border border-border">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-surface-1">
               <tr className="border-b border-border text-left">

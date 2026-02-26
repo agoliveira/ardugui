@@ -98,7 +98,7 @@ export function PlaceholderPage({ pageId }: PlaceholderPageProps) {
   return (
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-1 border border-border">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded bg-surface-1 border border-border">
           <Icon size={28} className="text-subtle" />
         </div>
         <h2 className="text-3xl font-extrabold text-foreground tracking-tight">{info.label}</h2>
