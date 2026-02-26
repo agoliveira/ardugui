@@ -4,6 +4,11 @@
  * MotorsPage (to show correct silhouette).
  *
  * Reads EFFECTIVE values: dirtyParams first, then committed FC params.
+ *
+ * Copters & VTOLs: matched by additionalParams (FRAME_CLASS/TYPE).
+ * Planes: matched by comparing each preset's exact output-to-function
+ * mapping against current SERVO#_FUNCTION values, since many plane
+ * types share the same function codes (77, 78, 70).
  */
 
 import { useMemo } from 'react';
@@ -38,33 +43,63 @@ export function useDetectedPreset(): AirframePreset | null {
       }
     }
 
-    // Planes (no additionalParams): match by servo function pattern
+    // Planes: match by exact output-to-function mapping.
+    // For each preset, check whether SERVO{defaultOutput}_FUNCTION matches
+    // the expected function code. This distinguishes e.g. V-Tail (SERVO4=78)
+    // from Conventional (SERVO4=79) even though both use function codes 77/78.
     if (vehicleType === 'plane') {
-      const currentFuncs = new Set<number>();
-      for (let i = 1; i <= 16; i++) {
-        const val = getVal(`SERVO${i}_FUNCTION`);
-        if (val !== null && val !== 0) currentFuncs.add(val);
-      }
-
       let bestMatch: AirframePreset | null = null;
-      let bestScore = 0;
+      let bestScore = -1;
+
       for (const preset of AIRFRAME_PRESETS) {
         if (preset.category !== 'plane') continue;
-        const presetFuncs = new Set<number>();
-        if (preset.planeTemplate) {
-          for (const s of preset.planeTemplate.surfaces) presetFuncs.add(s.function);
-        }
-        for (const m of preset.motorTemplate.forwardMotors) presetFuncs.add(m.function);
 
-        let hits = 0;
-        presetFuncs.forEach((f) => { if (currentFuncs.has(f)) hits++; });
-        const score = presetFuncs.size > 0 ? hits / presetFuncs.size : 0;
+        // Build the expected output map for this preset: output# -> function
+        const expectedOutputs = new Map<number, number>();
+        if (preset.planeTemplate) {
+          for (const s of preset.planeTemplate.surfaces) {
+            expectedOutputs.set(s.defaultOutput, s.function);
+          }
+        }
+        for (const m of preset.motorTemplate.forwardMotors) {
+          expectedOutputs.set(m.defaultOutput, m.function);
+        }
+
+        if (expectedOutputs.size === 0) continue;
+
+        // Count exact output-to-function matches
+        let matches = 0;
+        for (const [output, expectedFunc] of expectedOutputs) {
+          const actualFunc = getVal(`SERVO${output}_FUNCTION`);
+          if (actualFunc === expectedFunc) matches++;
+        }
+
+        // Penalize presets that leave extra non-zero outputs unexplained.
+        // Prevents small presets (e.g. Flying Wing with 3 outputs) from
+        // winning when a larger frame (e.g. Conventional with 5) is configured.
+        let extraNonZero = 0;
+        for (let i = 1; i <= 16; i++) {
+          if (!expectedOutputs.has(i)) {
+            const val = getVal(`SERVO${i}_FUNCTION`);
+            if (val !== null && val !== 0) extraNonZero++;
+          }
+        }
+
+        // Combined score: exact matches minus penalty for unexplained outputs
+        const score = matches - (extraNonZero * 0.1);
+
         if (score > bestScore) {
           bestScore = score;
           bestMatch = preset;
         }
       }
-      if (bestScore >= 0.7) return bestMatch;
+
+      // Require at least 70% of the preset's outputs to match
+      if (bestMatch) {
+        const expectedSize = (bestMatch.planeTemplate?.surfaces.length ?? 0) +
+          bestMatch.motorTemplate.forwardMotors.length;
+        if (bestScore >= expectedSize * 0.7) return bestMatch;
+      }
     }
 
     return null;
