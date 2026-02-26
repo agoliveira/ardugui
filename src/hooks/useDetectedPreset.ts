@@ -31,13 +31,20 @@ export function useDetectedPreset(): AirframePreset | null {
     };
 
     // Copters & VTOLs: match additionalParams (FRAME_CLASS/TYPE, Q_FRAME_CLASS/TYPE)
+    // Note: when switching to/from VTOL, vehicleType may still reflect the old
+    // firmware mode until reboot. Check dirty Q_ENABLE to allow VTOL detection
+    // before the FC has rebooted.
+    const qEnableDirty = dirtyParams.has('Q_ENABLE') ? dirtyParams.get('Q_ENABLE') : null;
+    const effectivelyVtol = vehicleType === 'quadplane' || qEnableDirty === 1;
+    const effectivelyPlane = vehicleType === 'plane' && qEnableDirty !== 1;
+
     for (const preset of AIRFRAME_PRESETS) {
       const ap = preset.additionalParams;
       if (!ap) continue;
 
       const allMatch = Object.entries(ap).every(([key, val]) => getVal(key) === val);
       if (allMatch) {
-        if (preset.category === 'vtol' && vehicleType !== 'quadplane') continue;
+        if (preset.category === 'vtol' && !effectivelyVtol) continue;
         if (preset.category === 'copter' && vehicleType !== 'copter') continue;
         return preset;
       }
@@ -47,7 +54,7 @@ export function useDetectedPreset(): AirframePreset | null {
     // For each preset, check whether SERVO{defaultOutput}_FUNCTION matches
     // the expected function code. This distinguishes e.g. V-Tail (SERVO4=78)
     // from Conventional (SERVO4=79) even though both use function codes 77/78.
-    if (vehicleType === 'plane') {
+    if (effectivelyPlane) {
       let bestMatch: AirframePreset | null = null;
       let bestScore = -1;
 
