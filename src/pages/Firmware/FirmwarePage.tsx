@@ -6,7 +6,7 @@ import {
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import {
-  getBoards, findFirmware, findBoardsByBoardId, clearManifestCache,
+  getBoards, findFirmware, clearManifestCache,
   type BoardInfo, type FirmwareInfo, type VehicleType, type ReleaseChannel,
 } from '@/firmware/manifest';
 import {
@@ -145,6 +145,12 @@ export function FirmwarePage() {
     );
   }, [boards, searchQuery]);
 
+  // Selected board info
+  const selectedBoard = useMemo(
+    () => boards.find((b) => b.platform === selectedPlatform) || null,
+    [boards, selectedPlatform]
+  );
+
   // BDShot toggle -- find if selected board has a BDShot variant
   const [useBDShot, setUseBDShot] = useState(false);
 
@@ -168,12 +174,6 @@ export function FirmwarePage() {
       if (normal) setSelectedPlatform(normal.platform);
     }
   }, [bdShotVariant, selectedBoard, boards]);
-
-  // Selected board info
-  const selectedBoard = useMemo(
-    () => boards.find((b) => b.platform === selectedPlatform) || null,
-    [boards, selectedPlatform]
-  );
 
   /* ---------------------------------------------------------------- */
   /*  Download firmware from manifest URL                              */

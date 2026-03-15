@@ -323,10 +323,13 @@ function checkRc(get: ParamGetter): Finding[] {
     }
   }
 
-  // Some receivers use dedicated SBUS pin, not a serial port
-  const rcProtocol = getParam(get, 'RSSI_TYPE', 0);
-  // Just check for the common mistake of no serial RX port
-  // (Hard to detect definitively since some boards have dedicated RX pins)
+  // Some receivers use dedicated SBUS pin, not a serial port.
+  // Hard to detect definitively since some boards have dedicated RX pins,
+  // so we only flag if no serial RX port is found.
+  if (!hasRcPort) {
+    // Not a definitive error -- many boards have hardware SBUS input
+    // that doesn't show as a serial protocol. Leave as info-level.
+  }
 
   return findings;
 }

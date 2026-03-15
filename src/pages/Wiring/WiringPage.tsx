@@ -15,7 +15,6 @@ import {
   Radio,
   Cable,
   Zap,
-  Battery,
   Wifi,
   Monitor,
   Usb,
@@ -25,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useParameterStore, getEffectiveValue } from '@/store/parameterStore';
 import { useVehicleStore } from '@/store/vehicleStore';
-import { getBoardById, type BoardDef, type BoardUartPort } from '@/models/boardRegistry';
+import { getBoardById } from '@/models/boardRegistry';
 import { SERIAL_PROTOCOLS } from '@/models/serialPorts';
 
 /* ------------------------------------------------------------------ */

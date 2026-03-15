@@ -110,7 +110,7 @@ export function MotorEscStep({ onCanAdvanceChange }: MotorEscStepProps) {
       const sorted = [...motorLayout.motors].sort((a, b) => a.number - b.number);
       const templateMotors = selectedPreset
         ? [...selectedPreset.motorTemplate.vtolMotors, ...selectedPreset.motorTemplate.forwardMotors]
-            .sort((a, b) => a.number - b.number)
+            .sort((a, b) => a.function - b.function)
         : null;
 
       return sorted.map((motor, idx) => {
@@ -289,7 +289,7 @@ const MC = {
 };
 
 function MotorDiagram({
-  preset, layout, spunMotors, testingMotor, motorResults,
+  preset, layout, spunMotors: _spunMotors, testingMotor, motorResults,
 }: {
   preset: AirframePreset; layout: FrameLayout;
   spunMotors: Set<number>; testingMotor: number | null;

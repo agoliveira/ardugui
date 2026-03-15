@@ -43,7 +43,6 @@ export function SetupWizard() {
   const currentStepIndex = useWizardStore((s) => s.currentStepIndex);
   const completedSteps = useWizardStore((s) => s.completedSteps);
   const abandon = useWizardStore((s) => s.abandon);
-  const stagedParams = useWizardStore((s) => s.stagedParams);
   const isConnected = useConnectionStore((s) => s.status === 'connected');
   const connectionStatus = useConnectionStore((s) => s.status);
   const portPath = useConnectionStore((s) => s.portPath);

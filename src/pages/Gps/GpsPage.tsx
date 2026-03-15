@@ -8,9 +8,7 @@
 import { useMemo } from 'react';
 import {
   Navigation,
-  Satellite,
   Info,
-  Signal,
   SignalZero,
 } from 'lucide-react';
 import { useParameterStore, getEffectiveValue } from '@/store/parameterStore';

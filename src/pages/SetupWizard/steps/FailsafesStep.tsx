@@ -15,7 +15,6 @@
 
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import {
-  Check,
   Wand2,
   Info,
   Radio,
@@ -26,7 +25,6 @@ import {
 } from 'lucide-react';
 import { useWizardStore } from '../wizardStore';
 import { useParameterStore } from '@/store/parameterStore';
-import type { VehicleType } from '@/store/vehicleStore';
 
 /* ------------------------------------------------------------------ */
 /*  Failsafe definitions per vehicle type                              */
@@ -419,7 +417,7 @@ export function FailsafesStep({ onCanAdvanceChange }: FailsafesStepProps) {
 
 function VoltageInput({
   label,
-  param,
+  param: _param,
   value,
   onChange,
   hint,

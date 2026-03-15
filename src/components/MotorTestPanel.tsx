@@ -20,10 +20,8 @@ import {
   Check,
   X,
   AlertTriangle,
-  Zap,
   ShieldAlert,
   Battery,
-  Cog,
 } from 'lucide-react';
 import { connectionManager } from '@/mavlink/connection';
 import { MotorSafetyMonitor, type SafetyAlert } from '@/mavlink/motorSafetyMonitor';

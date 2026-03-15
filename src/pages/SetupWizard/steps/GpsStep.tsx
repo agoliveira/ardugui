@@ -18,9 +18,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Check,
-  MapPin,
   Satellite,
-  Signal,
   SignalZero,
   Info,
   AlertTriangle,

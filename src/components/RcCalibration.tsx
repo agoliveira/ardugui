@@ -422,8 +422,6 @@ export function RcCalibration({ onComplete, onCanAdvanceChange }: RcCalibrationP
             chanCount={chanCount}
             mins={capturedMins.current}
             maxs={capturedMaxs.current}
-            channels={rcChannels}
-            throttleChan={throttleChan}
           />
 
           <div className="flex justify-end">
@@ -599,14 +597,10 @@ function CalibrationSummary({
   chanCount,
   mins,
   maxs,
-  channels,
-  throttleChan,
 }: {
   chanCount: number;
   mins: number[];
   maxs: number[];
-  channels: number[];
-  throttleChan: number;
 }) {
   const count = Math.min(chanCount, MAX_CHANNELS);
   return (

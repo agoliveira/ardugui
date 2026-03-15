@@ -16,8 +16,7 @@ import {
   FileCheck,
   ShieldAlert,
 } from 'lucide-react';
-import { useWizardStore, type WizardStep } from '../wizardStore';
-import { useConnectionStore } from '@/store/connectionStore';
+import { useWizardStore } from '../wizardStore';
 import { connectionManager } from '@/mavlink/connection';
 
 /* ------------------------------------------------------------------ */
@@ -157,10 +156,11 @@ export function ReviewStep() {
 
   const handleRebootAndFinish = useCallback(async () => {
     setShowRebootDialog(false);
-    const { portPath, baudRate } = useConnectionStore.getState();
     abandon();
-    if (portPath) {
-      await connectionManager.rebootAndReconnect(portPath, baudRate);
+    try {
+      await connectionManager.rebootFlightController();
+    } catch {
+      // Disconnect expected during reboot
     }
   }, [abandon]);
 

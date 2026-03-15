@@ -70,7 +70,6 @@ export function TransitionsStep({ onCanAdvanceChange }: TransitionsStepProps) {
   const stageParams = useWizardStore((s) => s.stageParams);
   const stagedParams = useWizardStore((s) => s.stagedParams);
   const markComplete = useWizardStore((s) => s.markComplete);
-  const parameters = useParameterStore((s) => s.parameters);
   const paramState = useParameterStore.getState();
 
   const getParam = (name: string, fallback: number): number =>

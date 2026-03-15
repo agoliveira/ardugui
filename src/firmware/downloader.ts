@@ -167,7 +167,8 @@ async function zlibDecompress(data: Uint8Array): Promise<Uint8Array> {
   const reader = ds.readable.getReader();
 
   // Write compressed data and close
-  writer.write(data);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Uint8Array<ArrayBufferLike> vs BufferSource mismatch in newer TS
+  writer.write(data as any);
   writer.close();
 
   // Read all decompressed chunks

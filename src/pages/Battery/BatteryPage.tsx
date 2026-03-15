@@ -24,12 +24,8 @@
 
 import { useState, useCallback } from 'react';
 import {
-  Battery,
-  BatteryWarning,
-  Zap,
   AlertTriangle,
   Info,
-  Check,
 } from 'lucide-react';
 import { useParameterStore, getEffectiveValue } from '@/store/parameterStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
@@ -62,7 +58,6 @@ const FAILSAFE_ACTIONS = [
 
 export function BatteryPage() {
   const paramState = useParameterStore.getState();
-  const parameters = useParameterStore((s) => s.parameters);
   const setParamLocal = useParameterStore((s) => s.setParamLocal);
   const battery = useTelemetryStore((s) => s.battery);
 
