@@ -11,7 +11,7 @@
  * checked when a board isn't in the hand-coded registry below.
  */
 
-import { getExtendedBoard, getExtendedBoardByName, ALL_EXTENDED_BOARDS } from './boardData';
+import { getExtendedBoard, getExtendedBoardByName } from './boardData';
 
 export interface BoardConnector {
   /** Connector label printed on the board */

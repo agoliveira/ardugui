@@ -14,22 +14,24 @@
 /* ------------------------------------------------------------------ */
 
 /** FTP Opcodes (client -> server) */
-const OP_NONE = 0;
-const OP_TERMINATE_SESSION = 1;
-const OP_RESET_SESSIONS = 2;
-const OP_LIST_DIRECTORY = 3;
-const OP_OPEN_FILE_RO = 4;
-const OP_READ_FILE = 5;
-const OP_CREATE_FILE = 6;
-const OP_WRITE_FILE = 7;
-const OP_REMOVE_FILE = 8;
-const OP_CREATE_DIRECTORY = 9;
-const OP_REMOVE_DIRECTORY = 10;
-const OP_OPEN_FILE_WO = 11;
-const OP_TRUNCATE_FILE = 12;
-const OP_RENAME = 13;
-const OP_CALC_FILE_CRC32 = 14;
-const OP_BURST_READ_FILE = 15;
+const FTP_OP = {
+  NONE: 0,
+  TERMINATE_SESSION: 1,
+  RESET_SESSIONS: 2,
+  LIST_DIRECTORY: 3,
+  OPEN_FILE_RO: 4,
+  READ_FILE: 5,
+  CREATE_FILE: 6,
+  WRITE_FILE: 7,
+  REMOVE_FILE: 8,
+  CREATE_DIRECTORY: 9,
+  REMOVE_DIRECTORY: 10,
+  OPEN_FILE_WO: 11,
+  TRUNCATE_FILE: 12,
+  RENAME: 13,
+  CALC_FILE_CRC32: 14,
+  BURST_READ_FILE: 15,
+} as const;
 
 /** FTP response opcodes (server -> client) */
 const OP_ACK = 128;
@@ -333,7 +335,7 @@ export class MavFtpClient {
   handleFtpMessage(mavPayload: Uint8Array): void {
     const ftp = decodeFtpPayload(mavPayload);
     // Only log non-data messages (errors, NAKs, open/close) to reduce noise
-    if (ftp.opcode !== OP_ACK || ftp.reqOpcode !== OP_BURST_READ_FILE) {
+    if (ftp.opcode !== OP_ACK || ftp.reqOpcode !== FTP_OP.BURST_READ_FILE) {
       this.log(`MAVFTP rx: op=${ftp.opcode} reqOp=${ftp.reqOpcode} sz=${ftp.size} sess=${ftp.session} ofs=${ftp.offset} burst=${ftp.burstComplete}`);
     }
     if (this.responseHandler) {
@@ -351,6 +353,9 @@ export class MavFtpClient {
     const startTime = Date.now();
 
     try {
+      // Clean up any stale sessions from previous attempts
+      await this.resetSessions();
+
       // Try packed binary format first (ArduPilot v4.4+, much faster)
       let opened = await this.openFileRO(PARAM_FILE_PATH);
       if (!opened && this.lastNakError !== 'timeout') {
@@ -400,7 +405,7 @@ export class MavFtpClient {
     const payload = encodeFtpPayload({
       seqNumber: this.seq,
       session: 0,
-      opcode: OP_RESET_SESSIONS,
+      opcode: FTP_OP.RESET_SESSIONS,
       size: 0,
       reqOpcode: 0,
       burstComplete: 0,
@@ -424,7 +429,7 @@ export class MavFtpClient {
     const payload = encodeFtpPayload({
       seqNumber: this.seq,
       session: 0,
-      opcode: OP_OPEN_FILE_RO,
+      opcode: FTP_OP.OPEN_FILE_RO,
       size: pathBytes.length,
       reqOpcode: 0,
       burstComplete: 0,
@@ -433,7 +438,7 @@ export class MavFtpClient {
     });
 
     this.log(`MAVFTP: Opening "${path}"`);
-    const response = await this.sendAndWait(payload, OP_OPEN_FILE_RO);
+    const response = await this.sendAndWait(payload, FTP_OP.OPEN_FILE_RO);
     if (!response) {
       this.lastNakError = 'timeout';
       this.log('MAVFTP: OpenFileRO timed out -- no response from FC');
@@ -570,7 +575,7 @@ export class MavFtpClient {
     const payload = encodeFtpPayload({
       seqNumber: this.seq,
       session: this.session,
-      opcode: OP_TERMINATE_SESSION,
+      opcode: FTP_OP.TERMINATE_SESSION,
       size: 0,
       reqOpcode: 0,
       burstComplete: 0,
@@ -586,7 +591,7 @@ export class MavFtpClient {
     const payload = encodeFtpPayload({
       seqNumber: this.seq,
       session: this.session,
-      opcode: OP_BURST_READ_FILE,
+      opcode: FTP_OP.BURST_READ_FILE,
       size: READ_SIZE,
       reqOpcode: 0,
       burstComplete: 0,

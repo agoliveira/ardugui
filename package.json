@@ -1,7 +1,7 @@
 {
   "name": "ardugui",
-  "version": "0.2.0",
-  "description": "INAV Configurator-style GUI for ArduPilot",
+  "version": "1.0.0-rc1",
+  "description": "Desktop configurator for ArduPilot flight controllers",
   "author": {
     "name": "ArduGUI Contributors",
     "email": "ardugui@users.noreply.github.com"

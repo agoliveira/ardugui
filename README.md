@@ -1,240 +1,218 @@
 # ArduGUI
 
-An approachable, guided ground control station for [ArduPilot](https://ardupilot.org/) flight controllers. Built with Electron, React, and TypeScript.
+A desktop configurator for [ArduPilot](https://ardupilot.org/) flight controllers. Takes your aircraft from a blank board to test flight -- either starting from scratch or migrating from INAV.
 
-ArduGUI aims to bring the usability of INAV Configurator to ArduPilot's ecosystem -- presenting curated workflows instead of a flat parameter dump, so configuring a multirotor, plane, or VTOL doesn't require reading 400 wiki pages first.
+Built with Electron + React + TypeScript + Tailwind.
 
----
-
-> ## ⚠️ IMPORTANT -- READ BEFORE USE
->
-> **ArduGUI is experimental, pre-alpha software under active development.**
->
-> - It has **not been field-tested** on real aircraft.
-> - It **will contain bugs** that could result in incorrect configuration.
-> - **Always verify every parameter** against a trusted tool like [Mission Planner](https://ardupilot.org/planner/) or [QGroundControl](https://qgroundcontrol.com/) before flying.
-> - **Do not use ArduGUI as your sole configuration tool.** Treat it as an assistant, not a source of truth.
-> - The author(s) accept **no responsibility** for any damage, injury, or loss resulting from the use of this software. See [DISCLAIMER.md](DISCLAIMER.md) for the full liability notice.
->
-> **If a value in ArduGUI disagrees with Mission Planner, trust Mission Planner.**
+![License](https://img.shields.io/badge/license-GPLv3-blue)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
+![Status](https://img.shields.io/badge/status-RC1%20%2F%20feature%20complete-orange)
 
 ---
 
-## Current Status
+> ## Safety Notice
+>
+> ArduGUI configures real aircraft that can cause injury or property damage.
+>
+> - **Always verify every parameter** against [Mission Planner](https://ardupilot.org/planner/) or [QGroundControl](https://qgroundcontrol.com/) before flying.
+> - **Remove all propellers** during the entire configuration process.
+> - **Do not fly** without completing motor direction verification, control surface checks, and failsafe testing.
+> - The author(s) accept **no responsibility** for any damage, injury, or loss resulting from the use of this software. See [DISCLAIMER.md](DISCLAIMER.md).
+>
+> **This is a release candidate. It is feature complete but has not been fully field-tested. Treat it as an assistant, not a source of truth.**
 
-**Pre-alpha / Proof of concept.** The core architecture is in place and many pages are functional over a live MAVLink connection, but nothing should be considered stable, complete, or safe for unverified use.
+---
 
-### What works today
+## What It Does
 
-| Feature | Status | Notes |
-|---|---|---|
-| Serial connection | ✅ Working | USB serial, auto-detect baud rate |
-| Parameter download | ✅ Working | Full parameter set from FC |
-| Parameter editing | ✅ Working | Local edits with dirty tracking, write-back to FC |
-| Board detection | ✅ Working | Auto-detects board from USB IDs and parameters |
-| Board diagram | ✅ Working | Interactive port/pin diagram for 50+ supported boards |
-| Vehicle type detection | ✅ Working | Copter, Plane, QuadPlane from MAV_TYPE |
-| Frame Wizard | ✅ Working | Guided airframe selection, servo mapping, output assignment. Detects and highlights currently configured frame on re-entry |
-| Ports page | ✅ Working | Serial port protocol assignment with board-aware labels |
-| Configuration page | ✅ Working | Grouped parameter editing for common settings |
-| Flight Modes | ✅ Working | INAV-style range sliders with RC channel binding |
-| Receiver page | ✅ Working | RC input visualization and protocol selection |
-| Motor test | ✅ Working | Individual and sequential motor testing with safety interlocks |
-| Motor diagram | ✅ Working | Frame-specific SVG diagrams matching the configured airframe (Quad X/+/H, Hex, etc.) with correct motor numbering and rotation |
-| Calibration | ✅ Working | Accelerometer 6-position calibration with live 3D model viewer (GLB), smooth animated orientation transitions, separate level trim card |
-| PID Tuning | 🔧 In progress | Parameter editing, no real-time graphing yet |
-| OSD Editor | 🔧 In progress | Canvas-based drag-and-drop layout, element toggling |
-| Navigation | 🔧 Skeleton | Geofence and RTL parameter editing |
-| Failsafes | 🔧 Skeleton | Battery, RC, GCS failsafe configuration |
-| CLI | ✅ Working | Full parameter search, filter, and raw editing |
+ArduGUI is a **configurator**, not a ground control station. It handles initial setup only -- telemetry dashboards, mission planning, and in-flight tuning are left to Mission Planner and QGC.
 
-### What doesn't work yet
+Two paths to first flight:
 
-- No mission planning or waypoint support.
-- No log download or analysis.
-- No firmware flashing.
-- No telemetry graphing or blackbox viewer.
-- Compass calibration is not implemented.
-- The full Setup Wizard (guided end-to-end aircraft configuration with PID suggestions based on frame size) is planned but not started.
-- Many edge cases in frame/motor configuration are untested.
-- QuadPlane transitions page is a placeholder.
-- No automated tests exist yet.
-- No WiFi, Bluetooth, or UDP connections (USB serial only).
+1. **Start Fresh** -- flash firmware, run the setup wizard, calibrate, fly
+2. **Migrate from INAV** -- import your "diff all" config, review the translation, calibrate, fly
 
-## Screenshots
+### Key Features
 
-*Coming soon -- the UI is still changing rapidly.*
+| Feature | Description |
+|---|---|
+| **Setup Wizard** | 15-step guided flow from frame selection to first flight readiness. Write-as-you-go -- params saved on each step, rollback on abandon. |
+| **INAV Migration** | Import "diff all" config. Translates frame type, motor mapping, receiver, battery, failsafes, GPS, compass, OSD layout, flight modes, and channel map. |
+| **VTOL Configuration** | Full quadplane support: tilt servos, transitions, assist thresholds, Q_ parameter lifecycle. This is the key differentiator. |
+| **414-Board Database** | Generated from ArduPilot hwdef files. Board-aware wiring guides with physical pad labels. |
+| **MAVFTP** | Parameter download in ~300ms (vs ~15s with traditional MAVLink). |
+| **Firmware Flashing** | Download from ArduPilot manifest, flash via bootloader protocol. BDShot variant toggle. |
+| **3D Calibration Viewer** | Accelerometer 6-position calibration with animated Three.js model. |
+| **Pre-flight Dashboard** | Sensor health, pre-arm failures, parameter validation, GPS quality, battery status. |
 
-## Supported Vehicles
+---
 
-| Type | Firmware | Frames |
-|---|---|---|
-| Multirotors | ArduCopter | Quad (X, +, H, BF-X), Hex (X, +), Octo X, Y6, Tri |
-| Fixed-wing | ArduPlane | Conventional, flying wing, V-tail, A-tail, canard, twin-engine, glider |
-| VTOL | ArduPlane (QuadPlane) | QuadPlane, hex VTOL, tilt-rotor, tailsitter |
+## Supported Aircraft
 
-**Not supported:** Helicopters, rovers, boats, submarines, antenna trackers.
+- **Copters** -- quad, hex, octo, tri, Y6, coaxial
+- **Planes** -- conventional, flying wing, V-tail
+- **VTOL** -- quadplanes, tiltrotors (the primary focus)
 
-## Supported Boards
+---
 
-ArduGUI ships with a database of 50+ flight controller boards scraped from ArduPilot's hardware definition files. The board database includes pin mappings, serial port labels, sensor information, and default parameters. See [tools/README.md](tools/README.md) for how the database is generated.
+## Installation
 
-Currently includes detailed definitions for popular boards like Pixhawk 6X/6C, Matek H743/F405, CubeOrange/Black, Kakute H7, SpeedyBee F405, and many others.
+### Download
 
-## Getting Started
+Pre-built binaries are available on the [Releases](../../releases) page:
 
-### Prerequisites
+- **Windows** -- `.exe` installer
+- **Linux** -- `.AppImage` (portable) or `.deb`
+- **macOS** -- `.dmg`
 
-- **Node.js** 18 or later
-- **npm** 9 or later
-- **Git**
-- A flight controller running **ArduPilot** (ArduCopter 4.3+ or ArduPlane 4.3+)
-
-### Install
+### Build from Source
 
 ```bash
-git clone https://github.com/agoliveira/ardugui.git
+git clone https://github.com/user/ardugui.git
 cd ardugui
 npm install
+npm run dev        # Development mode with hot reload
+npm run build      # Production build
+npm run package    # Create distributable
 ```
 
-### Run in Development
+Requirements: Node.js 20+, npm 10+. Linux also needs `libudev-dev`.
 
-```bash
-npm run dev
-```
+---
 
-This starts the Vite dev server and launches the Electron app with hot reload. The app opens automatically with serial port access.
+## Quick Start
 
-**Browser-only preview** (no serial -- inspect UI without a flight controller):
+1. **Flash firmware** (if needed) -- open ArduGUI, go to Firmware page, select your board, download and flash.
+2. **Connect** -- plug in USB, click Connect. Parameters download automatically.
+3. **Run the Setup Wizard** -- the sidebar "Setup Wizard" button walks you through everything:
+   - Frame selection
+   - Output mapping (board-aware)
+   - Motor direction test (with safety monitor)
+   - Control surfaces (3D viewer with live servo feedback)
+   - Tilt servos and transitions (VTOL)
+   - Receiver protocol and RC calibration
+   - GPS, compass, accelerometer calibration
+   - Flight modes and failsafes
+   - Initial tune (prop-size-based filter calculation)
+4. **Review and reboot** -- the wizard shows what was configured and offers a reboot.
+5. **Pre-flight check** -- go to the Pre-flight page, run checks, fix any issues.
 
-```bash
-npm run preview
-```
+Every wizard function is also accessible as a standalone sidebar page for manual configuration.
 
-### Build
+---
 
-```bash
-npm run build:electron
-```
+## INAV Migration
 
-Produces platform-specific packages in `release/` (AppImage/deb on Linux, NSIS on Windows, DMG on macOS).
+If you are moving from INAV to ArduPilot:
 
-### MAVLink Code Generation
+1. In INAV Configurator CLI, type `diff all` and copy the output.
+2. In ArduGUI's Setup Wizard, click "Migrating from INAV?" on the Frame step.
+3. Paste the text. ArduGUI translates ~80-90% of the configuration automatically.
+4. Complete calibration (accel, compass, RC) -- these are hardware-specific and cannot transfer.
+5. Review flight modes and failsafes -- the translation is best-effort.
 
-The MAVLink protocol types are generated from upstream XML definitions:
+**What transfers:** frame type, motor mapping, receiver protocol, serial ports, battery thresholds, GPS, compass orientation, board alignment, OSD layout, flight modes, channel map, failsafes, motor protocol.
 
-```bash
-# Clone MAVLink definitions
-git clone https://github.com/mavlink/mavlink resources/mavlink-definitions
+**What doesn't:** calibration data, PID tuning, RC expo/rates (different control model).
 
-# Generate TypeScript types
-npm run generate:mavlink
-```
+---
 
-### Board Database Update
+## Sidebar Pages
 
-To refresh the board database from the latest ArduPilot source:
+Every page is fully implemented:
 
-```bash
-# Scrape hardware definitions
-python3 tools/scrape-hwdef.py --summary
-
-# Generate TypeScript
-python3 tools/generate-board-defs.py
-```
-
-See [tools/README.md](tools/README.md) for options and details.
-
-## Tech Stack
-
-| Component | Technology |
+| Page | Description |
 |---|---|
-| App shell | Electron 40 |
-| Language | TypeScript 5.9 |
-| UI framework | React 19 |
-| Build tool | Vite 7 |
-| State management | Zustand 5 |
-| Styling | Tailwind CSS 4 |
-| 3D rendering | Three.js 0.183 (calibration viewer) |
-| Serial | node-serialport 13 |
-| Protocol | MAVLink v2 (generated from XML) |
-| Icons | Lucide React |
+| Connect / Info | Board info, serial port selection, connection status |
+| Firmware | Flash ArduPilot firmware, BDShot toggle |
+| Setup Wizard | Guided 15-step configuration flow |
+| Frame | Airframe selection with visual grid |
+| Motors | Motor test, frame diagram, servo output table |
+| Surfaces | 3D control surface viewer with live servo bars (plane/VTOL) |
+| Wiring | Board-aware wiring guide with pad labels |
+| Ports | Serial port protocol assignment |
+| Receiver | Live RC channel bars |
+| GPS | Live telemetry, constellation toggles |
+| Calibration | Accel (3D viewer), compass, RC calibration, level trim |
+| Battery | Monitor type, calibration, cell count, failsafe thresholds |
+| ESC | Protocol, DShot settings, direction reversal, spin thresholds |
+| Modes | 6-slot flight mode assignment with RC range visualization |
+| Failsafes | RC, battery, GCS failsafe configuration |
+| PID Tuning | Filter and rate parameter editing |
+| Navigation | Geofence, RTL, waypoint parameters |
+| Configuration | Grouped parameter editing |
+| OSD | Visual OSD layout editor |
+| Transitions | VTOL transition config (quadplane only) |
+| Backups | Parameter backup/restore with diff view |
+| Pre-flight | Readiness dashboard with sensor health and pre-arm checks |
+| CLI | Raw parameter search and editing |
+| Expert | Full parameter tree (debug mode) |
 
-## Project Structure
-
-```
-ardugui/
-├── electron/              Electron main process
-│   ├── main.ts            Window management, IPC bridge
-│   ├── preload.ts         Context bridge for renderer
-│   └── serial/            Serial port communication layer
-├── src/
-│   ├── app/               App shell, layout, sidebar, header
-│   ├── components/        Reusable UI components
-│   │   ├── AirframeIcons.tsx    Aircraft silhouettes (shared across all pages)
-│   │   ├── BoardDiagram.tsx     Interactive FC board pin visualization
-│   │   ├── Calibration3DViewer.tsx  Three.js 3D orientation viewer (GLB models)
-│   │   ├── DebugConsole.tsx     MAVLink message inspector
-│   │   ├── HealthBar.tsx        Sensor/subsystem health indicators
-│   │   ├── SaveDialog.tsx       Parameter review and write-to-FC dialog
-│   │   └── VehicleGraphics.tsx  Motor/servo diagrams for motors page
-│   ├── hooks/             React hooks
-│   │   └── useDetectedPreset.ts  Detect configured airframe from FC params
-│   ├── mavlink/           MAVLink protocol layer
-│   │   ├── connection.ts  Connection manager singleton
-│   │   ├── parser.ts      MAVLink v2 packet parser
-│   │   ├── encoder.ts     Message encoding
-│   │   └── messages.ts    Message type definitions
-│   ├── models/            Data definitions
-│   │   ├── airframeTemplates.ts  Aircraft presets, servo mappings, motor layouts
-│   │   ├── boardData.ts          FC board database (generated from hwdef)
-│   │   ├── boardRegistry.ts      Board detection and lookup
-│   │   └── frameDefinitions.ts   Motor positions by frame class/type
-│   ├── pages/             One directory per sidebar tab
-│   │   ├── Calibration/   Accelerometer calibration with 3D viewer
-│   │   ├── CLI/           Raw parameter search, filter, edit
-│   │   ├── Configuration/ Grouped parameter editing
-│   │   ├── Failsafes/     Battery, RC, GCS failsafe config
-│   │   ├── FrameWizard/   Guided airframe selection and servo mapping
-│   │   ├── Modes/         Flight mode assignment with RC range sliders
-│   │   ├── Motors/        Motor test, frame diagram, servo table
-│   │   ├── Navigation/    Geofence and RTL parameters
-│   │   ├── OSD/           Canvas-based OSD layout editor
-│   │   ├── PIDTuning/     PID parameter editing
-│   │   ├── Ports/         Serial port protocol assignment
-│   │   ├── Receiver/      RC input visualization
-│   │   └── Setup/         Board info, connection status
-│   ├── store/             Zustand state stores
-│   │   ├── calibrationStore.ts   Accelerometer calibration state machine
-│   │   ├── connectionStore.ts    Serial port state, connection lifecycle
-│   │   ├── debugStore.ts         Debug console message buffer
-│   │   ├── parameterStore.ts     All FC parameters, dirty tracking, write-back
-│   │   ├── telemetryStore.ts     Real-time telemetry values
-│   │   └── vehicleStore.ts       Vehicle type, firmware info, armed state
-│   └── styles/            Theme CSS custom properties
-├── public/
-│   └── models/            3D models (GLB) for calibration viewer
-├── tools/                 Build-time scripts
-│   ├── scrape-hwdef.py    ArduPilot hwdef parser
-│   └── generate-board-defs.py  Board database generator
-├── ARCHITECTURE.md        Full architecture specification
-├── CHANGELOG.md           Version history
-├── CONTRIBUTING.md        Developer guide
-├── DISCLAIMER.md          Safety and liability notice
-└── SECURITY.md            Vulnerability reporting policy
-```
+---
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed architecture specification, including the MAVLink protocol layer design, state management patterns, and page-by-page specifications.
+- **Runtime:** Electron (main + renderer)
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS + custom theme ("Forge v6")
+- **State:** Zustand stores
+- **3D:** Three.js (calibration viewer, control surface viewer)
+- **Database:** SQLite via better-sqlite3 (parameter backups)
+- **MAVLink:** Custom parser + MAVFTP client
+- **Board data:** 414 boards from ArduPilot hwdef, 174 INAV timer mappings
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full specification.
+
+---
+
+## Development
+
+```bash
+npm run dev          # Electron + Vite dev mode with hot reload
+npm run typecheck    # TypeScript type checking
+npm run build        # Production build (renderer + electron)
+npm run package      # Build distributable packages
+```
+
+### Project Structure
+
+```
+src/
+  app/               Layout, Sidebar, Header, Footer
+  components/        Reusable UI (ConfirmDialog, MotorTestPanel, RcCalibration, 3D viewers)
+  mavlink/           MAVLink connection, message parsing, MAVFTP, motor safety monitor
+  store/             Zustand stores (connection, params, telemetry, calibration, preflight)
+  models/            Data definitions (airframes, boards, INAV import, validation)
+  hooks/             React hooks (useDetectedPreset, etc.)
+  pages/             One directory per sidebar page + SetupWizard/
+  styles/            Forge v6 theme CSS variables
+  firmware/          Firmware manifest parser, APJ handler, bootloader protocol
+tools/
+  scrape-hwdef.py    ArduPilot hwdef board database generator
+  scrape-inav-timers.py  INAV target.c timer data extractor
+```
+
+---
+
+## Known Issues (v1.0.0-rc1)
+
+- Connected flash path (MAVLink reboot-to-bootloader) -- untested
+- OSD import param names -- code-reviewed but not hardware-verified
+- Custom `.apj` flash reports "invalid image_size" -- validation happens before decompression
+- Connected flash navigates to connect page instead of staying on firmware page
+
+See [TODO.md](TODO.md) for the full roadmap.
+
+---
 
 ## Contributing
 
-Contributions are welcome, but please read [CONTRIBUTING.md](CONTRIBUTING.md) first. This project is in a very early stage and the architecture is still evolving -- coordinating before starting work will save everyone time.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. The architecture is documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
 
 ## License
 
-GPLv3. See [LICENSE](LICENSE) for the full text.
+GPLv3. See [LICENSE](LICENSE).
 
 This project is not affiliated with, endorsed by, or supported by the ArduPilot project, Dronecode, or any flight controller manufacturer.

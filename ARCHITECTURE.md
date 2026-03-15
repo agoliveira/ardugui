@@ -14,6 +14,18 @@ Last updated: March 15, 2026
 - **Database:** SQLite via better-sqlite3 (parameter backup system)
 - **MAVLink:** Custom parser (not mavlink-mappings or dronekit)
 
+### Pre-delivery checklist
+
+Before delivering any code, always run:
+
+```bash
+npm install --ignore-scripts   # skip Electron binary if it fails
+npx tsc --noEmit               # must report ZERO errors
+```
+
+The project uses `noUnusedLocals: true` and `noUnusedParameters: true` in tsconfig.
+CI will reject any unused import, variable, or type. No ESLint config exists yet.
+
 ---
 
 ## Process Architecture

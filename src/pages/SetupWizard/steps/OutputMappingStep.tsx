@@ -181,7 +181,6 @@ export function OutputMappingStep({ onCanAdvanceChange }: OutputMappingStepProps
   const highestActive = outputs.reduce((max, o) => o.functionValue !== 0 ? Math.max(max, o.servoNum) : max, 0);
   const displayOutputs = outputs.filter(o => o.servoNum <= highestActive);
   const activeOutputs = displayOutputs.filter(o => o.functionValue !== 0);
-  const inactiveOutputs = outputs.filter(o => o.functionValue === 0 && o.servoNum <= highestActive);
   const availableOutputs = outputs.filter(o => o.functionValue === 0 && o.servoNum > highestActive);
 
   // ── Conflict detection ─────────────────────────────────────────
@@ -217,10 +216,6 @@ export function OutputMappingStep({ onCanAdvanceChange }: OutputMappingStepProps
     stageParams({ [`SERVO${servoNum}_FUNCTION`]: newFunc });
     setWritten(false); // Mark as needing re-write after changes
   }, [stageParams]);
-
-  const handleResetDefaults = useCallback(() => {
-    setCustomizing(false);
-  }, []);
 
   const handleWriteToFC = useCallback(async () => {
     setWriting(true);

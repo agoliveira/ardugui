@@ -36,3 +36,11 @@ tools/ardupilot/
 *_blender.*
 *_for_blender.*
 .wget-hsts.wget-hsts
+.wget-hsts
+commit-*.sh
+release.sh
+cross-ref-report.json
+.wget-hsts
+commit-*.sh
+release.sh
+cross-ref-report.json

@@ -28,6 +28,15 @@ the user. All `console.log()` output is invisible. Never rely on console output 
 debugging feedback or verification. If something needs to be visible, it must appear
 in the UI. Design all error handling and status reporting to surface in the interface.
 
+**Always run `npx tsc --noEmit` before delivering code.** The project uses strict
+TypeScript with `noUnusedLocals: true` and `noUnusedParameters: true`. Every unused
+import, variable, or type will fail CI. Run the compiler locally before packaging
+any tarball. If `npm install` fails due to Electron binary download, use
+`npm install --ignore-scripts` -- the type checker does not need the Electron binary.
+
+**No ESLint config exists.** The project does not have an `eslint.config.js`. Do not
+add a lint step to CI until one is created and passes cleanly.
+
 ---
 
 ## Current Visual Identity: "Forge v6"

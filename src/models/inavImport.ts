@@ -375,6 +375,7 @@ export interface ImportSummaryItem {
 
 export interface ImportSkippedItem {
   category: string;
+  label: string;
   reason: string;
 }
 
@@ -735,6 +736,7 @@ export function mapToArduPilot(
   if (config.serialPorts.size > 0 && serialPortsMapped === 0 && !board) {
     skipped.push({
       category: 'Serial Ports',
+      label: 'Serial port mapping',
       reason: `Could not map INAV serial ports -- board "${config.board ?? 'unknown'}" is not in the ArduPilot board registry. Configure serial ports manually in the Ports page.`,
     });
   }
@@ -1530,11 +1532,11 @@ export function mapToArduPilot(
 
   // ── Skipped items ────────────────────────────────────────────────
 
-  skipped.push({ category: 'PIDs', reason: 'INAV and ArduPilot use different PID controllers with different scaling. Use ArduPilot defaults and run AutoTune.' });
-  skipped.push({ category: 'Navigation tuning', reason: 'Navigation parameters differ between firmware. ArduPilot defaults are safe starting points.' });
+  skipped.push({ category: 'PIDs', label: 'PID tuning', reason: 'INAV and ArduPilot use different PID controllers with different scaling. Use ArduPilot defaults and run AutoTune.' });
+  skipped.push({ category: 'Navigation tuning', label: 'Navigation params', reason: 'Navigation parameters differ between firmware. ArduPilot defaults are safe starting points.' });
 
   if (config.features.has('AIRMODE')) {
-    skipped.push({ category: 'AirMode', reason: 'ArduPilot handles AirMode differently (via ACRO_OPTIONS parameter).' });
+    skipped.push({ category: 'AirMode', label: 'AirMode feature', reason: 'ArduPilot handles AirMode differently (via ACRO_OPTIONS parameter).' });
   }
 
   // ── Build detected config for display ────────────────────────────

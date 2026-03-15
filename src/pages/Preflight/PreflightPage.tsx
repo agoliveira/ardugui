@@ -45,8 +45,6 @@ import {
 import {
   validateParameters,
   CATEGORY_LABELS as VALIDATION_CATEGORY_LABELS,
-  type Finding,
-  type FindingSeverity,
 } from '@/models/paramValidation';
 
 /* ------------------------------------------------------------------ */
@@ -115,7 +113,6 @@ function useDerivedChecks(): DerivedCheck[] {
     // Battery
     if (battery && battery.voltage > 1) {
       const cellCount = params.get('BATT_CELL_COUNT')?.value ?? 0;
-      const lowVolt = params.get('BATT_LOW_VOLT')?.value ?? 0;
       const voltsPerCell = cellCount > 0 ? battery.voltage / cellCount : 0;
       checks.push({
         label: 'Battery',
@@ -138,7 +135,6 @@ function useDerivedChecks(): DerivedCheck[] {
 
     // Flight modes configured
     const mode1 = params.get('FLTMODE1')?.value;
-    const mode4 = params.get('FLTMODE4')?.value;
     checks.push({
       label: 'Flight modes',
       status: mode1 !== undefined ? 'ok' : 'warn',

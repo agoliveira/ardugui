@@ -345,8 +345,9 @@ export class Bootloader {
  * Buffers incoming data and provides blocking read with timeout.
  */
 export function createSerialTransport(): BootloaderTransport {
-  const api = window.electronAPI;
-  if (!api?.serial) throw new Error('Electron serial API not available');
+  const rawApi = window.electronAPI;
+  if (!rawApi?.serial) throw new Error('Electron serial API not available');
+  const api = rawApi;
 
   let buffer = new Uint8Array(0);
   let dataResolver: ((data: Uint8Array) => void) | null = null;

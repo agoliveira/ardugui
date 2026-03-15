@@ -25,7 +25,6 @@ import {
   Zap,
   RotateCcw,
   Info,
-  AlertTriangle,
 } from 'lucide-react';
 import { useParameterStore, getEffectiveValue } from '@/store/parameterStore';
 import { useVehicleStore } from '@/store/vehicleStore';
@@ -67,7 +66,6 @@ export function EscPage() {
   const isDshot = pwmType >= 4 && pwmType <= 7;
 
   const blhAuto = getEffectiveValue(paramState, 'SERVO_BLH_AUTO') ?? 0;
-  const blhMask = getEffectiveValue(paramState, 'SERVO_BLH_MASK') ?? 0;
   const blhRvMask = getEffectiveValue(paramState, 'SERVO_BLH_RVMASK') ?? 0;
   const dshotEsc = getEffectiveValue(paramState, 'SERVO_DSHOT_ESC') ?? 0;
   const dshotRate = getEffectiveValue(paramState, 'SERVO_DSHOT_RATE') ?? 0;
@@ -191,7 +189,6 @@ export function EscPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               {motorOutputs.map((output) => {
-                const motorNum = output;
                 const bit = 1 << (output - 1);
                 const isReversed = (blhRvMask & bit) !== 0;
                 return (

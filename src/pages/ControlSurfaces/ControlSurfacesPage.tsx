@@ -125,10 +125,12 @@ export function ControlSurfacesPage() {
       const s = surfaces.find(s => s.functionId === funcId);
       return s ? servoToDeg(s.servoNum) * (s.reversed ? -1 : 1) : 0;
     };
+    const ailDeg = findDeg(FUNC.AILERON) || findDeg(FUNC.FLAPERON_L);
     return {
-      aileronDeg: findDeg(FUNC.AILERON) || findDeg(FUNC.FLAPERON_L),
-      elevatorDeg: findDeg(FUNC.ELEVATOR),
-      rudderDeg: findDeg(FUNC.RUDDER),
+      leftAilDeg: ailDeg,
+      rightAilDeg: -ailDeg,
+      elevDeg: findDeg(FUNC.ELEVATOR),
+      rudDeg: findDeg(FUNC.RUDDER),
     };
   }, [surfaces, servoToDeg]);
 
@@ -169,8 +171,8 @@ export function ControlSurfacesPage() {
             <div className="card-header">{viewDef?.label ?? viewType}</div>
             <div className="mx-auto max-w-[600px]">
               <ControlSurface3DViewer
-                view={viewType}
-                deflection={deflection}
+                viewType={viewType}
+                deflections={deflection}
               />
             </div>
             <p className="mt-2 text-center text-xs text-muted">

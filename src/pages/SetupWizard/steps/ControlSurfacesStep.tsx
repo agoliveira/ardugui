@@ -10,7 +10,6 @@ import { useEffect, useCallback, useState, useMemo } from 'react';
 import {
   Check,
   AlertTriangle,
-  Info,
   RotateCcw,
   ChevronDown,
   ChevronUp,
