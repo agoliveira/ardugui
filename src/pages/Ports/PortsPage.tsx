@@ -397,6 +397,7 @@ function PortDetails({
   applyQuirk,
 }: PortDetailsProps) {
   const paramState = useParameterStore.getState();
+  const setParamLocal = useParameterStore((s) => s.setParamLocal);
 
   return (
     <div className="border-t border-border/50 bg-surface-0 px-5 py-3 space-y-2.5">
@@ -423,15 +424,25 @@ function PortDetails({
       {altConfigNeeded && uartPort.requiresAltConfig && (
         <div className="flex items-start gap-2 rounded bg-warning/10 px-3 py-2 text-[13px]">
           <AlertTriangle size={12} className="mt-0.5 shrink-0 text-warning" />
-          <div className="text-muted">
+          <div className="flex-1 text-muted">
             <strong className="text-warning">Alt Config Required: </strong>
             This port is currently in "{uartPort.requiresAltConfig.defaultMode}" mode.
             Set{' '}
             <code className="rounded bg-surface-2 px-1 font-mono text-[13px]">
               {uartPort.requiresAltConfig.param}={uartPort.requiresAltConfig.value}
             </code>{' '}
-            to enable full UART mode. Click "Auto-fix" to apply this automatically.
+            to enable full UART mode.
           </div>
+          <button
+            onClick={() => {
+              const { param, value } = uartPort.requiresAltConfig!;
+              setParamLocal(param, value);
+            }}
+            className="flex shrink-0 items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-accent/90 transition-colors"
+          >
+            <Wrench size={11} />
+            Fix
+          </button>
         </div>
       )}
 

@@ -14,29 +14,32 @@
 import { useMemo } from 'react';
 import { useParameterStore } from '@/store/parameterStore';
 import { useVehicleStore } from '@/store/vehicleStore';
+import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import { AIRFRAME_PRESETS, type AirframePreset } from '@/models/airframeTemplates';
 
 export function useDetectedPreset(): AirframePreset | null {
   const parameters = useParameterStore((s) => s.parameters);
   const dirtyParams = useParameterStore((s) => s.dirtyParams);
   const vehicleType = useVehicleStore((s) => s.type);
+  const stagedParams = useWizardStore((s) => s.stagedParams);
 
   return useMemo(() => {
     if (!parameters.size) return null;
 
-    // Effective value: dirty (local edit) takes priority over FC value
+    // Effective value: staged (wizard) > dirty (local edit) > FC value
     const getVal = (name: string): number | null => {
+      if (stagedParams[name] !== undefined) return stagedParams[name];
       if (dirtyParams.has(name)) return dirtyParams.get(name)!;
       return parameters.get(name)?.value ?? null;
     };
 
     // Copters & VTOLs: match additionalParams (FRAME_CLASS/TYPE, Q_FRAME_CLASS/TYPE)
     // Note: when switching to/from VTOL, vehicleType may still reflect the old
-    // firmware mode until reboot. Check dirty Q_ENABLE to allow VTOL detection
+    // firmware mode until reboot. Check staged/dirty Q_ENABLE to allow VTOL detection
     // before the FC has rebooted.
-    const qEnableDirty = dirtyParams.has('Q_ENABLE') ? dirtyParams.get('Q_ENABLE') : null;
-    const effectivelyVtol = vehicleType === 'quadplane' || qEnableDirty === 1;
-    const effectivelyPlane = vehicleType === 'plane' && qEnableDirty !== 1;
+    const qEnableEffective = getVal('Q_ENABLE');
+    const effectivelyVtol = vehicleType === 'quadplane' || qEnableEffective === 1;
+    const effectivelyPlane = vehicleType === 'plane' && qEnableEffective !== 1;
 
     for (const preset of AIRFRAME_PRESETS) {
       const ap = preset.additionalParams;
@@ -110,5 +113,5 @@ export function useDetectedPreset(): AirframePreset | null {
     }
 
     return null;
-  }, [parameters, dirtyParams, vehicleType]);
+  }, [parameters, dirtyParams, stagedParams, vehicleType]);
 }

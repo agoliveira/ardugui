@@ -8,12 +8,18 @@ export interface VehicleState {
   firmwareType: string | null;
   armed: boolean;
   boardId: string | null;
+  /** Numeric APJ_BOARD_ID from AUTOPILOT_VERSION -- used for firmware matching */
+  apjBoardId: number | null;
+  /** Current ArduPilot custom mode number from heartbeat */
+  flightMode: number | null;
 
   // Actions
   setVehicle: (type: VehicleType, firmwareType: string | null) => void;
   setFirmwareVersion: (version: string) => void;
   setArmed: (armed: boolean) => void;
   setBoardId: (boardId: string | null) => void;
+  setApjBoardId: (id: number | null) => void;
+  setFlightMode: (mode: number) => void;
   reset: () => void;
 }
 
@@ -23,11 +29,15 @@ export const useVehicleStore = create<VehicleState>((set) => ({
   firmwareType: null,
   armed: false,
   boardId: null,
+  apjBoardId: null,
+  flightMode: null,
 
   setVehicle: (type, firmwareType) => set({ type, firmwareType }),
   setFirmwareVersion: (firmwareVersion) => set({ firmwareVersion }),
   setArmed: (armed) => set({ armed }),
   setBoardId: (boardId) => set({ boardId }),
+  setApjBoardId: (apjBoardId) => set({ apjBoardId }),
+  setFlightMode: (flightMode) => set({ flightMode }),
   reset: () =>
     set({
       type: null,
@@ -35,6 +45,8 @@ export const useVehicleStore = create<VehicleState>((set) => ({
       firmwareType: null,
       armed: false,
       boardId: null,
+      apjBoardId: null,
+      flightMode: null,
     }),
 }));
 
@@ -49,10 +61,14 @@ export function getVisiblePages(
   // After connection: full sidebar
   const common = [
     'connect',    // was 'setup' -- board info + connection
+    'firmware',   // install/update firmware
+    'wizard',     // setup wizard -- guided first-flight config
     'frame',      // frame configuration
+    'wiring',
     'ports',
     'configuration',
     'receiver',
+    'gps',
     'modes',
   ];
 
@@ -62,21 +78,20 @@ export function getVisiblePages(
     'failsafes',
     ...(hasOsd ? ['osd'] as string[] : []),
     'backups',
+    'preflight',
     'cli',
     ...(expertMode ? ['expert'] as string[] : []),
   ];
 
   switch (type) {
     case 'copter':
-      return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation', ...tail];
+      return [...common, 'motors', 'calibration', 'battery', 'esc', 'pid_tuning', 'navigation', ...tail];
     case 'plane':
-      return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation', ...tail];
+      return [...common, 'motors', 'control_surfaces', 'calibration', 'battery', 'esc', 'pid_tuning', 'navigation', ...tail];
     case 'quadplane':
-      return [...common, 'motors', 'calibration', 'pid_tuning', 'navigation',
-        'failsafes', ...(hasOsd ? ['osd'] as string[] : []), 'transitions',
-        'backups', 'cli', ...(expertMode ? ['expert'] as string[] : [])];
+      return [...common, 'motors', 'control_surfaces', 'calibration', 'battery', 'esc', 'pid_tuning', 'navigation',
+        'transitions', ...tail];
     default:
-      // Not connected: only the connect page
-      return ['connect'];
+      return ['connect', 'firmware'];
   }
 }

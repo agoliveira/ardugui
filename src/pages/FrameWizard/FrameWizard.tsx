@@ -29,6 +29,7 @@ import {
   type AirframePreset,
 } from '@/models/airframeTemplates';
 import { AirframeIcon, AIRFRAME_VIEWBOX } from '@/components/AirframeIcons';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 type CategoryTab = 'plane' | 'copter' | 'vtol';
 
@@ -241,6 +242,7 @@ export function FrameWizard({
   const vehicleType = useVehicleStore((s) => s.type);
   const stageParams = useParameterStore((s) => s.stageParams);
   const detectedPreset = useDetectedPreset();
+  const { confirm, ConfirmDialogElement } = useConfirm();
 
   const [categoryTab, setCategoryTab] = useState<CategoryTab>(
     vehicleType === 'copter' ? 'copter' : vehicleType === 'quadplane' ? 'vtol' : 'plane'
@@ -259,18 +261,21 @@ export function FrameWizard({
   void onNavigate;
   void scrollRef;
 
-  const handleSelectPreset = useCallback((p: AirframePreset) => {
+  const handleSelectPreset = useCallback(async (p: AirframePreset) => {
     if (selectedPreset && selectedPreset.id !== p.id) {
-      const confirmed = window.confirm(
-        'Switching frames will reset your options. Continue?'
-      );
-      if (!confirmed) return;
+      const ok = await confirm({
+        title: 'Switch frame?',
+        message: 'Switching frames will reset your options. Continue?',
+        confirmLabel: 'Switch',
+        cancelLabel: 'Cancel',
+      });
+      if (!ok) return;
     }
     setSelectedPreset(p);
     setUserModified(true);
     setApplied(false);
     setSelectedExtras(new Set());
-  }, [selectedPreset]);
+  }, [selectedPreset, confirm]);
 
   const hasUnsavedWork = userModified && selectedPreset !== null && !applied;
 
@@ -433,6 +438,8 @@ export function FrameWizard({
   // ── Main render ────────────────────────────────────────────────────
 
   return (
+    <>
+    {ConfirmDialogElement}
     <div className="flex h-full flex-col gap-5 overflow-y-auto p-8">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Frame</h1>
@@ -747,5 +754,6 @@ export function FrameWizard({
         </div>
       )}
     </div>
+    </>
   );
 }

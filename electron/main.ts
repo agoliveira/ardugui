@@ -170,6 +170,21 @@ ipcMain.handle('fs:open-file', async (_event, filters: { name: string; extension
   return { path: filePaths[0], content };
 });
 
+// IPC: fetch URL from main process (bypasses renderer CSP/CORS restrictions)
+ipcMain.handle('net:fetch', async (_event, url: string) => {
+  const { net } = await import('electron');
+  try {
+    const response = await net.fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    const text = await response.text();
+    return { ok: true, text };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
 app.whenReady().then(async () => {
   await initDb();
   createWindow();

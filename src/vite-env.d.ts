@@ -17,9 +17,25 @@ declare global {
     open: (path: string, baudRate: number) => Promise<void>;
     close: () => Promise<void>;
     write: (data: Uint8Array) => Promise<void>;
+    setBaudRate: (baudRate: number) => Promise<void>;
     onData: (callback: (data: Uint8Array) => void) => () => void;
     onError: (callback: (error: string) => void) => () => void;
     onClose: (callback: () => void) => () => void;
+    // Port watcher -- auto-detect USB plug/unplug
+    startPortWatch: () => Promise<void>;
+    stopPortWatch: () => Promise<void>;
+    onPortsChanged: (callback: (ports: {
+      path: string;
+      manufacturer?: string;
+      serialNumber?: string;
+      vendorId?: string;
+      productId?: string;
+      pnpId?: string;
+    }[]) => void) => () => void;
+  }
+
+  interface ElectronNetAPI {
+    fetch: (url: string) => Promise<{ ok: boolean; text?: string; error?: string }>;
   }
 
   interface ElectronFsAPI {
@@ -114,6 +130,7 @@ declare global {
   interface ElectronAPI {
     serial: ElectronSerialAPI;
     fs: ElectronFsAPI;
+    net: ElectronNetAPI;
     db: ElectronDbAPI;
     toggleDevTools: () => Promise<void>;
   }

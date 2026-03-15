@@ -615,7 +615,7 @@ export const MOTOR_TEMPLATES: Record<string, MotorTemplate> = {
     vtolMotors: [
       { number: 1, x: -0.7, y: 0.5, rotation: 'CCW', function: 33, defaultOutput: 5 },
       { number: 2, x: 0.7, y: 0.5, rotation: 'CW', function: 34, defaultOutput: 6 },
-      { number: 3, x: 0, y: -0.8, rotation: 'CW', function: 35, defaultOutput: 7 },
+      { number: 4, x: 0, y: -0.8, rotation: 'CW', function: 36, defaultOutput: 8 },
     ],
   },
 

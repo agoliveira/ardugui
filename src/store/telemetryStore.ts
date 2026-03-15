@@ -1,13 +1,17 @@
 import { create } from 'zustand';
 
 export interface TelemetryState {
-  attitude: { roll: number; pitch: number; yaw: number } | null;
+  attitude: {
+    roll: number; pitch: number; yaw: number;
+    rollspeed: number; pitchspeed: number; yawspeed: number;
+  } | null;
   gps: {
     lat: number;
     lon: number;
     alt: number;
     fix: number;
     satellites: number;
+    hdop: number;
   } | null;
   battery: {
     voltage: number;
@@ -32,7 +36,7 @@ export interface TelemetryState {
   } | null;
 
   // Actions
-  setAttitude: (att: { roll: number; pitch: number; yaw: number }) => void;
+  setAttitude: (att: NonNullable<TelemetryState['attitude']>) => void;
   setGps: (gps: TelemetryState['gps']) => void;
   setBattery: (bat: TelemetryState['battery']) => void;
   setSensorHealth: (sh: NonNullable<TelemetryState['sensorHealth']>) => void;

@@ -248,6 +248,87 @@ BOARD_METADATA = {
 }
 
 
+# ── Pixhawk-style pad label overrides ──────────────────────────────
+# Most boards use TXn/RXn naming derived from the UART number.
+# Pixhawk-style boards use named connectors (TELEM1, GPS, etc.).
+# Add overrides here for boards that don't follow TXn/RXn convention.
+
+PAD_LABEL_OVERRIDES = {
+    'fmuv3': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'GPS2', 5: 'Debug'},
+    'Pixhawk1': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'GPS2', 5: 'Debug'},
+    'Pixhawk4': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'UART&I2C B', 5: 'Debug', 6: 'IO Debug'},
+    'Pixhawk6X': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS1', 4: 'TELEM3', 5: 'GPS2', 6: 'UART4 (I2C B)', 7: 'Debug'},
+    'Pixhawk6C': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS1', 4: 'TELEM3', 5: 'GPS2'},
+    'CubeBlack': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'GPS2', 5: 'Debug'},
+    'CubeOrange': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'GPS2', 5: 'Debug', 6: 'SERIAL6'},
+    'CubeOrangePlus': {1: 'TELEM1', 2: 'TELEM2', 3: 'GPS', 4: 'GPS2', 5: 'Debug', 6: 'SERIAL6'},
+}
+
+
+def derive_pad_label(uart_name: str, serial_index: int, folder: str) -> str:
+    """Derive a human-friendly pad label from a UART name.
+
+    For Matek/SpeedyBee/most mini boards: USARTn/UARTn -> TXn/RXn
+    For Pixhawk-style: use PAD_LABEL_OVERRIDES
+    For USB: 'USB'
+    """
+    # Check overrides first
+    overrides = PAD_LABEL_OVERRIDES.get(folder, {})
+    if serial_index in overrides:
+        return overrides[serial_index]
+
+    # USB
+    if uart_name.upper().startswith('OTG'):
+        return 'USB' if '1' in uart_name or serial_index == 0 else 'USB2'
+
+    # EMPTY placeholder
+    if uart_name.upper() == 'EMPTY':
+        return ''
+
+    # Extract number from USART1, UART4, USART6 etc.
+    m = re.match(r'U?S?ART(\d+)', uart_name, re.IGNORECASE)
+    if m:
+        return f"TX{m.group(1)}/RX{m.group(1)}"
+
+    # Fallback
+    return f"SERIAL{serial_index}"
+
+
+def generate_uart_ports_ts(board: dict, folder: str) -> str:
+    """Generate the uartPorts array TypeScript code from serialOrder."""
+    serial_order = board.get('serialOrder', [])
+    if not serial_order:
+        return ''
+
+    ports = []
+    for idx, uart_name in enumerate(serial_order):
+        if uart_name.upper() == 'EMPTY':
+            continue
+
+        pad_label = derive_pad_label(uart_name, idx, folder)
+        if not pad_label:
+            continue
+
+        is_usb = uart_name.upper().startswith('OTG')
+        parts = [
+            f"padLabel: '{pad_label}'",
+            f"serialIndex: {idx}",
+            f"uartName: '{uart_name}'",
+            "hasTx: true",
+            "hasRx: true",
+        ]
+        if is_usb:
+            parts.append("defaultProtocol: 2")
+            parts.append("defaultBaud: 115")
+
+        ports.append('    { ' + ', '.join(parts) + ' }')
+
+    if not ports:
+        return ''
+
+    return '[\n' + ',\n'.join(ports) + '\n  ]'
+
+
 # ── TypeScript Generation ───────────────────────────────────────────
 
 def to_ts_id(folder_name: str) -> str:
@@ -355,6 +436,15 @@ def generate_ts_board(board: dict, metadata: dict) -> str:
         f"  connectors: [],  // TODO: add physical connector layout",
         f"  uartMap: {uart_map_ts},",
     ])
+
+    # uartPorts -- derived from serialOrder with smart pad labels
+    uart_ports_ts = generate_uart_ports_ts(board, folder)
+    if uart_ports_ts:
+        lines.append(f"  uartPorts: {uart_ports_ts},")
+
+    # Confirmed flag -- boards with hand-crafted metadata are confirmed
+    is_confirmed = folder in BOARD_METADATA
+    lines.append(f"  confirmed: {'true' if is_confirmed else 'false'},")
 
     if board.get('apjBoardId'):
         lines.append(f"  apjBoardId: {board['apjBoardId']},")
@@ -499,6 +589,9 @@ export interface ExtendedBoardDef extends BoardDef {
 
   /** Default RC input configuration */
   defaultRcInput?: DefaultRcInputDef;
+
+  /** Whether this board has been manually verified for accuracy */
+  confirmed?: boolean;
 }
 
 // ── Board Definitions ──────────────────────────────────────────────

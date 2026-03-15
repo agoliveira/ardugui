@@ -36,6 +36,8 @@ const MAV_SYS_STATUS_SENSOR_3D_MAG = 1 << 2;
 // ─── Color Palette for Orientation ──────────────────────────────────────────
 // Port (left) = warm/orange, Starboard (right) = cool/cyan -- aviation convention
 import { Calibration3DViewer, CalibrationPositionGrid } from '@/components/Calibration3DViewer';
+import { RcCalibration } from '@/components/RcCalibration';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 // ─── Calibration Status Hooks ───────────────────────────────────────────────
 
@@ -83,15 +85,30 @@ export function CalibrationPage() {
       <div>
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Sensor Calibration</h1>
         <p className="mt-1 text-lg text-muted">
-          Calibrate accelerometer and compass before first flight.
+          Calibrate accelerometer, compass, and RC transmitter before first flight.
           A reboot is required after calibration for changes to take effect.
         </p>
       </div>
 
+      <RcCalibrationCard />
       <AccelCalibrationCard />
       <LevelTrimCard />
       <CompassCalibrationCard />
       <RebootCard />
+    </div>
+  );
+}
+
+// ─── RC Calibration ─────────────────────────────────────────────────────────
+
+function RcCalibrationCard() {
+  return (
+    <div className="rounded border border-border bg-surface-0 p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <MoveHorizontal size={16} className="text-accent" />
+        <h2 className="text-lg font-bold text-foreground">RC Calibration</h2>
+      </div>
+      <RcCalibration />
     </div>
   );
 }
@@ -104,21 +121,24 @@ function AccelCalibrationCard() {
   const completedPositions = useCalibrationStore((s) => s.accelCompletedPositions);
   const accelStatus = useAccelCalibrationStatus();
   const vehicleType = useVehicleStore((s) => s.type);
+  const { confirm, ConfirmDialogElement } = useConfirm();
 
   const isActive = accelState !== 'idle' && accelState !== 'done' && accelState !== 'failed';
 
   const handleStart = useCallback(async () => {
-    // Warn before re-calibrating if already calibrated
     if (accelStatus.calibrated) {
-      const confirmed = window.confirm(
-        'The accelerometer is already calibrated. Running calibration again will overwrite the existing offsets.\n\nContinue?'
-      );
-      if (!confirmed) return;
+      const ok = await confirm({
+        title: 'Re-calibrate accelerometer?',
+        message: 'The accelerometer is already calibrated. Running calibration again will overwrite the existing offsets.',
+        confirmLabel: 'Continue',
+        cancelLabel: 'Cancel',
+      });
+      if (!ok) return;
     }
     useCalibrationStore.getState().resetAccel();
     useCalibrationStore.getState().setAccelState('starting');
     await connectionManager.startAccelCalibration();
-  }, [accelStatus.calibrated]);
+  }, [accelStatus.calibrated, confirm]);
 
   const handleConfirmPosition = useCallback(async () => {
     if (!currentPosition) return;
@@ -252,8 +272,9 @@ function AccelCalibrationCard() {
   }, [currentPosition]);
 
   return (
+    <>
+    {ConfirmDialogElement}
     <div className="card overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
         <div className="flex h-12 w-12 items-center justify-center rounded bg-accent/10">
           <Crosshair size={24} className="text-accent" />
@@ -336,6 +357,7 @@ function AccelCalibrationCard() {
 
       </div>
     </div>
+    </>
   );
 }
 
@@ -758,17 +780,24 @@ function LevelTrimCard() {
 function RebootCard() {
   const [rebooting, setRebooting] = useState(false);
   const connectionStatus = useConnectionStore((s) => s.status);
+  const { confirm, ConfirmDialogElement } = useConfirm();
 
   const handleReboot = useCallback(async () => {
-    const confirmed = window.confirm(
-      'Reboot the flight controller? The connection will be lost and you will need to reconnect.'
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: 'Reboot flight controller?',
+      message: 'The connection will be lost and you will need to reconnect. This typically takes 3-5 seconds.',
+      confirmLabel: 'Reboot',
+      cancelLabel: 'Cancel',
+      danger: true,
+    });
+    if (!ok) return;
     setRebooting(true);
     try { await connectionManager.rebootFlightController(); } catch { /* disconnect expected */ }
-  }, []);
+  }, [confirm]);
 
   return (
+    <>
+    {ConfirmDialogElement}
     <div className="card overflow-hidden">
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border">
         <div className="flex h-12 w-12 items-center justify-center rounded bg-red-500/10">
@@ -783,7 +812,7 @@ function RebootCard() {
         <div className="flex items-start gap-4">
           <p className="flex-1 text-base text-muted leading-relaxed">
             Some parameter changes and all calibrations require a reboot to take effect.
-            The connection will drop and you'll need to reconnect after the FC restarts (typically 3–5 seconds).
+            The connection will drop and you'll need to reconnect after the FC restarts (typically 3-5 seconds).
           </p>
           <button
             onClick={handleReboot}
@@ -791,10 +820,11 @@ function RebootCard() {
             className="btn btn-danger flex items-center gap-2 shrink-0"
           >
             {rebooting ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
-            {rebooting ? 'Rebooting…' : 'Reboot FC'}
+            {rebooting ? 'Rebooting...' : 'Reboot FC'}
           </button>
         </div>
       </div>
     </div>
+    </>
   );
 }

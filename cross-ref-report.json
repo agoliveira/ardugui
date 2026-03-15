@@ -1,0 +1,3513 @@
+{
+  "summary": {
+    "inav_targets": 209,
+    "ardupilot_boards": 414,
+    "matched": 64,
+    "confirmed": 53,
+    "partial": 11,
+    "unmatched_inav": 145
+  },
+  "confirmed_boards": [
+    {
+      "inav_target": "AETH743Basic",
+      "ardupilot_board": "AET-H743-Basic",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "ATOMRCF405NAVI_DELUX",
+      "ardupilot_board": "AtomRCF405NAVI",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "BOTWINGF405",
+      "ardupilot_board": "BOTWINGF405",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "BRAHMA_F405",
+      "ardupilot_board": "BrahmaF4",
+      "matched_uarts": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "CORVON405V2",
+      "ardupilot_board": "CORVON405V2_1",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "CORVON743V1",
+      "ardupilot_board": "CORVON743V1",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "DAKEFPVF405",
+      "ardupilot_board": "DAKEFPVF405",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "DAKEFPVH743",
+      "ardupilot_board": "DAKEFPVH743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "DAKEFPVH743PRO",
+      "ardupilot_board": "DAKEFPVH743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FLYSPARKF4V4",
+      "ardupilot_board": "FlysparkF4",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FLYWOOF405PRO",
+      "ardupilot_board": "FlywooF405Pro",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FLYWOOF405S_AIO",
+      "ardupilot_board": "FlywooF405S-AIO",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FLYWOOF745",
+      "ardupilot_board": "FlywooF745",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FLYWOOH743PRO",
+      "ardupilot_board": "FlywooH743Pro",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FOXEERF405",
+      "ardupilot_board": "FoxeerF405v2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [
+        6
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FOXEERF405V2",
+      "ardupilot_board": "FoxeerF405v2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "FOXEERH743",
+      "ardupilot_board": "FoxeerH743v1",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "GEPRCF745_BT_HD",
+      "ardupilot_board": "GEPRCF745BTHD",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "GEPRC_TAKER_H743",
+      "ardupilot_board": "GEPRC_TAKER_H743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "JHEMCUF405",
+      "ardupilot_board": "JHEMCUF405PRO",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "JHEMCUF405WING",
+      "ardupilot_board": "JHEMCUF405WING",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "JHEMCUH743HD",
+      "ardupilot_board": "JHEMCU-H743HD",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEF4",
+      "ardupilot_board": "KakuteF4",
+      "matched_uarts": [
+        1,
+        3,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [
+        4,
+        5
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 2,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEF7",
+      "ardupilot_board": "KakuteF7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEF7MINIV3",
+      "ardupilot_board": "KakuteF7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [
+        7
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEH7",
+      "ardupilot_board": "KakuteH7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MAMBAF405US",
+      "ardupilot_board": "MambaF405US-I2C",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MAMBAF405_2022A",
+      "ardupilot_board": "MambaF405-2022",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MAMBAH743",
+      "ardupilot_board": "MambaH743v4",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKF405",
+      "ardupilot_board": "MatekF405",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 3,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKF405CAN",
+      "ardupilot_board": "MatekF405-CAN",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKF405SE",
+      "ardupilot_board": "MatekF405-Wing",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKF405TE",
+      "ardupilot_board": "MatekF405-TE",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKF765",
+      "ardupilot_board": "MatekF765-Wing",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 2,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MATEKH743",
+      "ardupilot_board": "MatekH743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 2,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MICOAIR405MINI",
+      "ardupilot_board": "MicoAir405Mini",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MICOAIR405V2",
+      "ardupilot_board": "MicoAir405v2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MICOAIR743",
+      "ardupilot_board": "MicoAir743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MICOAIR743AIO",
+      "ardupilot_board": "MicoAir743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "OMNIBUSF4",
+      "ardupilot_board": "omnibusf4pro",
+      "matched_uarts": [
+        1,
+        3,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [
+        4
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "OMNIBUSF7",
+      "ardupilot_board": "OMNIBUSF7V2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "ORBITH743",
+      "ardupilot_board": "ORBITH743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "RADIOLINKF405",
+      "ardupilot_board": "RadiolinkF405",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "RADIX",
+      "ardupilot_board": "RADIX2HD",
+      "matched_uarts": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [
+        2,
+        5,
+        7
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SDMODELH7V1",
+      "ardupilot_board": "SDMODELH7V1",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SDMODELH7V2",
+      "ardupilot_board": "SDMODELH7V2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SEQUREH7",
+      "ardupilot_board": "SequreH743",
+      "matched_uarts": [
+        1,
+        2,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SKYSTARSF405V2",
+      "ardupilot_board": "SkystarsF405v2",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SPEDIXF405",
+      "ardupilot_board": "SPEDIXF405",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SPEEDYBEEF405MINI",
+      "ardupilot_board": "SpeedyBeeF405Mini",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "TBS_LUCID_H7",
+      "ardupilot_board": "TBS_LUCID_H7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "TBS_LUCID_H7_WING",
+      "ardupilot_board": "TBS_LUCID_H7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "TBS_LUCID_H7_WING_MINI",
+      "ardupilot_board": "TBS_LUCID_H7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 8,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "partial_boards": [
+    {
+      "inav_target": "F4BY",
+      "ardupilot_board": "F4BY",
+      "matched_uarts": [
+        1,
+        2,
+        3
+      ],
+      "inav_only_uarts": [
+        4,
+        6
+      ],
+      "ardupilot_only_uarts": [
+        5
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 2,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "IFLIGHT_2RAW_H743",
+      "ardupilot_board": "IFLIGHT_2RAW_H7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "inav_only_uarts": [
+        7,
+        8
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "IFLIGHT_BLITZ_F7_PRO",
+      "ardupilot_board": "BlitzF745AIO",
+      "matched_uarts": [
+        1,
+        2,
+        4
+      ],
+      "inav_only_uarts": [
+        5
+      ],
+      "ardupilot_only_uarts": [
+        3,
+        7
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEF4WING",
+      "ardupilot_board": "KakuteF4",
+      "matched_uarts": [
+        1,
+        3,
+        5,
+        6
+      ],
+      "inav_only_uarts": [
+        2
+      ],
+      "ardupilot_only_uarts": [
+        4
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 2,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "KAKUTEH7WING",
+      "ardupilot_board": "KakuteH7",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        6,
+        7
+      ],
+      "inav_only_uarts": [
+        5,
+        8
+      ],
+      "ardupilot_only_uarts": [
+        4
+      ],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "MICOAIR743V2",
+      "ardupilot_board": "MicoAir743",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8
+      ],
+      "inav_only_uarts": [
+        5
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 5,
+          "padLabel": "TX6/RX6",
+          "uartNumber": 6,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 7,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "PIXRACER",
+      "ardupilot_board": "Pixracer",
+      "matched_uarts": [
+        1,
+        2,
+        3,
+        4,
+        7,
+        8
+      ],
+      "inav_only_uarts": [
+        6
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 5,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX2/RX2",
+          "uartNumber": 2,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 6,
+          "padLabel": "TX7/RX7",
+          "uartNumber": 7,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX8/RX8",
+          "uartNumber": 8,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "REVO",
+      "ardupilot_board": "revo-mini",
+      "matched_uarts": [
+        1,
+        3
+      ],
+      "inav_only_uarts": [
+        6
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SPARKY2",
+      "ardupilot_board": "sparky2",
+      "matched_uarts": [
+        1,
+        3
+      ],
+      "inav_only_uarts": [
+        6
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 3,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 1,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SPEEDYBEEF405AIO",
+      "ardupilot_board": "speedybeef4",
+      "matched_uarts": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [
+        2,
+        6
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    },
+    {
+      "inav_target": "SPEEDYBEEF405WINGV2",
+      "ardupilot_board": "speedybeef4",
+      "matched_uarts": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "inav_only_uarts": [
+        2,
+        6
+      ],
+      "ardupilot_only_uarts": [],
+      "pad_labels": [
+        {
+          "serialIndex": 1,
+          "padLabel": "TX1/RX1",
+          "uartNumber": 1,
+          "verified": true
+        },
+        {
+          "serialIndex": 3,
+          "padLabel": "TX3/RX3",
+          "uartNumber": 3,
+          "verified": true
+        },
+        {
+          "serialIndex": 2,
+          "padLabel": "TX4/RX4",
+          "uartNumber": 4,
+          "verified": true
+        },
+        {
+          "serialIndex": 4,
+          "padLabel": "TX5/RX5",
+          "uartNumber": 5,
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "unmatched_inav_targets": [
+    "AIKONF4",
+    "AIKONF4V3",
+    "AIKONF7",
+    "AIRBOTF4",
+    "AIRBOTF7",
+    "ALIENFLIGHTF4",
+    "ALIENFLIGHTNGF7",
+    "ANYFC",
+    "ANYFCF7",
+    "ANYFCM7",
+    "AOCODARCF405AIO",
+    "AOCODARCF4V2",
+    "AOCODARCF4V3",
+    "AOCODARCF722AIO",
+    "AOCODARCF7DUAL",
+    "AOCODARCF7MINI",
+    "AOCODARCH7DUAL",
+    "ASGARD32F4",
+    "ASGARD32F7",
+    "ATOMRCF405NAVI",
+    "ATOMRCF405V2",
+    "AXISFLYINGF7PRO",
+    "BEEROTORF4",
+    "BETAFLIGHTF4",
+    "BETAFPVF411",
+    "BETAFPVF435",
+    "BETAFPVF722",
+    "BLACKPILL_F411",
+    "BLUEBERRYF435WING",
+    "BLUEJAYF4",
+    "BOTWINGF722",
+    "BRAHMA_F722",
+    "BROTHERHOBBYF405V3",
+    "BROTHERHOBBYH743",
+    "CADDXF4_AIO_ELRS",
+    "CLRACINGF4AIR",
+    "COLIBRI",
+    "COREWINGF405WINGV2",
+    "DAKEFPVF435",
+    "DAKEFPVF722",
+    "DAKEFPVF722X8",
+    "DALRCF405",
+    "DALRCF722DUAL",
+    "FF_F35_LIGHTNING",
+    "FF_FORTINIF4",
+    "FF_PIKOF4",
+    "FIREWORKSV2",
+    "FISHDRONEF4",
+    "FLASHHOBBYF405",
+    "FLASHHOBBYF722",
+    "FLYCOLORF4",
+    "FLYCOLORF7MINI",
+    "FLYCOLORF7V2",
+    "FLYINGRCF4WINGMINI_NOT_RECOMMENDED",
+    "FLYWOOF411",
+    "FLYWOOF722PRO",
+    "FLYWOOF7DUAL",
+    "FOXEERF722DUAL",
+    "FOXEERF722V4",
+    "FOXEERF745AIO",
+    "FRSKYF4",
+    "FRSKYPILOT",
+    "FRSKY_ROVERF7",
+    "FURYF4OSD",
+    "GEPRCF405",
+    "GEPRCF405_BT_HD",
+    "GEPRCF722",
+    "GEPRCF722_BT_HD",
+    "GEPRC_F722_AIO",
+    "HAKRCF405D",
+    "HAKRCF405V2",
+    "HAKRCF411D",
+    "HAKRCF722V2",
+    "HAKRCKD722",
+    "HAPPYMODELF405",
+    "HGLRCF405V2",
+    "HGLRCF722",
+    "HUMMINGBIRD_FC305",
+    "IFLIGHTF4_SUCCEXD",
+    "IFLIGHTF4_TWING",
+    "IFLIGHTF7_TWING",
+    "IFLIGHT_BLITZ_ATF435",
+    "IFLIGHT_BLITZ_F722",
+    "IFLIGHT_BLITZ_F722_X1",
+    "IFLIGHT_BLITZ_F7_AIO",
+    "IFLIGHT_BLITZ_H7_PRO",
+    "IFLIGHT_H743_AIO_V2",
+    "IFLIGHT_JBF7PRO",
+    "JHEF405PRO",
+    "JHEH7AIO",
+    "JHEMCUF435",
+    "JHEMCUF435AIO",
+    "JHEMCUF722",
+    "JHEMCUF745",
+    "KROOZX",
+    "MAMBAF722",
+    "MAMBAF722_2022A",
+    "MAMBAF722_WING",
+    "MAMBAF722_X8",
+    "MATEKF411",
+    "MATEKF411SE",
+    "MATEKF411TE",
+    "MATEKF722",
+    "MATEKF722PX",
+    "MATEKF722SE",
+    "NEUTRONRCF435MINI",
+    "NEUTRONRCF435SE",
+    "NEUTRONRCF435WING",
+    "NEUTRONRCH7BT",
+    "NEXUSX",
+    "NOX",
+    "OMNIBUSF7NXT",
+    "ORBITF435",
+    "PRINCIPIOTF7",
+    "RADIOLINKF722",
+    "RUSH_BLADE_F7",
+    "SAGEATF4",
+    "SITL",
+    "SKYSTARSF405HD",
+    "SKYSTARSF405WING",
+    "SKYSTARSF722HD",
+    "SKYSTARSH743HD",
+    "SPEDIXF722",
+    "SPEEDYBEEF4",
+    "SPEEDYBEEF405V3",
+    "SPEEDYBEEF405V4",
+    "SPEEDYBEEF405WING",
+    "SPEEDYBEEF7",
+    "SPEEDYBEEF745AIO",
+    "SPEEDYBEEF7MINI",
+    "SPEEDYBEEF7V2",
+    "SPEEDYBEEF7V3",
+    "SPRACINGF4EVO",
+    "SPRACINGF7DUAL",
+    "TAKERF722SE",
+    "TBS_LUCID_FC",
+    "TMOTORF7",
+    "TMOTORF7V2",
+    "TMOTORVELOXF7V2",
+    "TUNERCF405",
+    "VANTAC_RF007",
+    "WARPF7",
+    "YUPIF4",
+    "YUPIF7",
+    "ZEEZF7"
+  ],
+  "inav_board_map_suggestions": {
+    "AETH743BASIC": "aet-h743-basic",
+    "ATOMRCF405NAVI_DELUX": "atomrcf405navi",
+    "BOTWINGF405": "botwingf405",
+    "BRAHMA_F405": "brahmaf4",
+    "CORVON405V2": "corvon405v2_1",
+    "CORVON743V1": "corvon743v1",
+    "DAKEFPVF405": "dakefpvf405",
+    "DAKEFPVH743": "dakefpvh743",
+    "DAKEFPVH743PRO": "dakefpvh743",
+    "F4BY": "f4by",
+    "FLYSPARKF4V4": "flysparkf4",
+    "FLYWOOF405PRO": "flywoof405pro",
+    "FLYWOOF405S_AIO": "flywoof405s-aio",
+    "FLYWOOF745": "flywoof745",
+    "FLYWOOH743PRO": "flywooh743pro",
+    "FOXEERF405": "foxeerf405v2",
+    "FOXEERF405V2": "foxeerf405v2",
+    "FOXEERH743": "foxeerh743v1",
+    "GEPRCF745_BT_HD": "geprcf745bthd",
+    "GEPRC_TAKER_H743": "geprc_taker_h743",
+    "IFLIGHT_2RAW_H743": "iflight_2raw_h7",
+    "IFLIGHT_BLITZ_F7_PRO": "blitzf745aio",
+    "JHEMCUF405": "jhemcuf405pro",
+    "JHEMCUF405WING": "jhemcuf405wing",
+    "JHEMCUH743HD": "jhemcu-h743hd",
+    "KAKUTEF4": "kakutef4",
+    "KAKUTEF4WING": "kakutef4",
+    "KAKUTEF7": "kakutef7",
+    "KAKUTEF7MINIV3": "kakutef7",
+    "KAKUTEH7": "kakuteh7",
+    "KAKUTEH7WING": "kakuteh7",
+    "MAMBAF405US": "mambaf405us-i2c",
+    "MAMBAF405_2022A": "mambaf405-2022",
+    "MAMBAH743": "mambah743v4",
+    "MATEKF405": "matekf405",
+    "MATEKF405CAN": "matekf405-can",
+    "MATEKF405SE": "matekf405-wing",
+    "MATEKF405TE": "matekf405-te",
+    "MATEKF765": "matekf765-wing",
+    "MATEKH743": "matekh743",
+    "MICOAIR405MINI": "micoair405mini",
+    "MICOAIR405V2": "micoair405v2",
+    "MICOAIR743": "micoair743",
+    "MICOAIR743AIO": "micoair743",
+    "MICOAIR743V2": "micoair743",
+    "OMNIBUSF4": "omnibusf4pro",
+    "OMNIBUSF7": "omnibusf7v2",
+    "ORBITH743": "orbith743",
+    "PIXRACER": "pixracer",
+    "RADIOLINKF405": "radiolinkf405",
+    "RADIX": "radix2hd",
+    "REVO": "revo-mini",
+    "SDMODELH7V1": "sdmodelh7v1",
+    "SDMODELH7V2": "sdmodelh7v2",
+    "SEQUREH7": "sequreh743",
+    "SKYSTARSF405V2": "skystarsf405v2",
+    "SPARKY2": "sparky2",
+    "SPEDIXF405": "spedixf405",
+    "SPEEDYBEEF405AIO": "speedybeef4",
+    "SPEEDYBEEF405MINI": "speedybeef405mini",
+    "SPEEDYBEEF405WINGV2": "speedybeef4",
+    "TBS_LUCID_H7": "tbs_lucid_h7",
+    "TBS_LUCID_H7_WING": "tbs_lucid_h7",
+    "TBS_LUCID_H7_WING_MINI": "tbs_lucid_h7"
+  }
+}

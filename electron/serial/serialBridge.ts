@@ -41,6 +41,28 @@ export function registerSerialHandlers(
   });
 
   ipcMain.handle('serial:write', async (_event, data: Uint8Array) => {
-    await serialManager.write(data);
+    try {
+      await serialManager.write(data);
+    } catch {
+      // Silently drop write errors -- renderer handles reconnection
+    }
+  });
+
+  ipcMain.handle('serial:set-baud', async (_event, baudRate: number) => {
+    await serialManager.setBaudRate(baudRate);
+  });
+
+  // Port watcher -- polls for USB changes and notifies renderer
+  ipcMain.handle('serial:start-port-watch', async () => {
+    serialManager.startPortWatch((ports) => {
+      const win = getWindow();
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('serial:ports-changed', ports);
+      }
+    });
+  });
+
+  ipcMain.handle('serial:stop-port-watch', async () => {
+    serialManager.stopPortWatch();
   });
 }

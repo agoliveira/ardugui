@@ -4,17 +4,19 @@
  * Orchestrates the full connection lifecycle:
  *   DISCONNECTED -> CONNECTING -> LOADING -> CONNECTED
  *
- * Parameter download strategy (modeled after QGroundControl):
- *   1. Send PARAM_REQUEST_LIST to get the full burst
- *   2. Track which indices have been received
- *   3. After the burst slows down, request missing params individually
- *      via PARAM_REQUEST_READ with the specific index
- *   4. Retry missing params up to 3 times each
- *   5. Mark complete once all received (or give up on stragglers)
+ * Parameter download strategy:
+ *   1. Try MAVFTP first (download @PARAM/param.parm as a file -- ~5-10x faster)
+ *   2. If FTP fails/unsupported, fall back to PARAM_REQUEST_LIST:
+ *      a. Send PARAM_REQUEST_LIST to get the full burst
+ *      b. Track which indices have been received
+ *      c. After the burst slows down, request missing params individually
+ *      d. Retry missing params up to 3 times each
+ *      e. Mark complete once all received (or give up on stragglers)
  */
 
 import { MavLinkParser, type MavLinkPacket } from './parser';
 import { encodePacket, resetSequence } from './encoder';
+import { MavFtpClient } from './mavftp';
 import {
   CRC_EXTRAS,
   MavType,
@@ -26,10 +28,12 @@ import {
   MSG_ID_PARAM_REQUEST_LIST,
   MSG_ID_PARAM_REQUEST_READ,
   MSG_ID_AUTOPILOT_VERSION,
+  MSG_ID_FILE_TRANSFER_PROTOCOL,
   MSG_ID_STATUSTEXT,
   MSG_ID_COMMAND_ACK,
   MSG_ID_SYS_STATUS,
   MSG_ID_GPS_RAW_INT,
+  MSG_ID_ATTITUDE,
   MSG_ID_RC_CHANNELS,
   MSG_ID_RC_CHANNELS_RAW,
   MSG_ID_REQUEST_DATA_STREAM,
@@ -50,6 +54,7 @@ import {
   parseAutopilotVersion,
   parseSysStatus,
   parseGpsRawInt,
+  parseAttitude,
   encodeParamRequestList,
   encodeParamRequestRead,
   encodeRequestDataStream,
@@ -62,6 +67,7 @@ import {
   MAV_CMD_PREFLIGHT_CALIBRATION,
   MAV_CMD_PREFLIGHT_STORAGE,
   MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+  MAV_CMD_DO_SET_MODE,
   MAV_CMD_DO_START_MAG_CAL,
   MAV_CMD_DO_ACCEPT_MAG_CAL,
   MAV_CMD_DO_CANCEL_MAG_CAL,
@@ -74,6 +80,7 @@ import { useParameterStore, type ParamType } from '@/store/parameterStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
 import { useDebugStore } from '@/store/debugStore';
 import { useCalibrationStore } from '@/store/calibrationStore';
+import { usePreflightStore } from '@/store/preflightStore';
 import { detectBoardFromId } from '@/models/boardRegistry';
 
 const HEARTBEAT_TIMEOUT_MS = 5000;
@@ -135,6 +142,9 @@ export class ConnectionManager {
   // Command ACK callbacks -- keyed by command ID
   private commandAckCallbacks: Map<number, (result: number) => void> = new Map();
 
+  // MAVFTP client for fast param download
+  private ftpClient: MavFtpClient | null = null;
+
   constructor() {
     this.parser = new MavLinkParser(
       (packet) => this.handlePacket(packet),
@@ -142,11 +152,22 @@ export class ConnectionManager {
     );
   }
 
+  /** Log to console (and optionally to MAVFTP client for UI feedback) */
+  private clog(msg: string) {
+    console.log(msg);
+  }
+
   getStatusMessages(): string[] {
     return this.statusMessages;
   }
 
   async connect(portPath: string, baudRate: number): Promise<void> {
+    // Tear down any existing connection first (prevents port lock issues)
+    this.clearAllTimers();
+    for (const cleanup of this.serialCleanups) cleanup();
+    this.serialCleanups = [];
+    try { await window.electronAPI?.serial.close(); } catch { /* may already be closed */ }
+
     const connStore = useConnectionStore.getState();
     connStore.setStatus('connecting');
     connStore.setPortPath(portPath);
@@ -256,6 +277,46 @@ export class ConnectionManager {
   }
 
   /**
+   * Request a full parameter list re-download from the FC.
+   * Use after writing a param that causes new params to appear
+   * (e.g. Q_ENABLE=1 spawns Q_FRAME_CLASS, Q_FRAME_TYPE, etc.)
+   */
+  async requestParamRefresh(): Promise<void> {
+    console.log('Requesting parameter refresh...');
+    this.paramCount = 0;
+    this.receivedIndices.clear();
+    this.missingRetryCount.clear();
+    this.requestingMissing = false;
+    this.postConnectDone = false;
+    await this.requestParameterList();
+  }
+
+  /**
+   * Wait for a specific parameter to appear in the parameter store.
+   * Useful after requestParamRefresh() when waiting for newly spawned params.
+   * Returns true if found, false on timeout.
+   */
+  async waitForParam(name: string, timeoutMs: number = 10000): Promise<boolean> {
+    const paramStore = useParameterStore.getState();
+    if (paramStore.parameters.has(name)) return true;
+
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (useParameterStore.getState().parameters.has(name)) {
+          clearInterval(interval);
+          clearTimeout(timer);
+          resolve(true);
+        }
+      }, 200);
+      const timer = setTimeout(() => {
+        clearInterval(interval);
+        console.warn(`Timed out waiting for param ${name} (${timeoutMs}ms)`);
+        resolve(false);
+      }, timeoutMs);
+    });
+  }
+
+  /**
    * Write all dirty parameters to the FC.
    * Params that don't exist on the FC are silently skipped and cleared from dirty.
    * Returns { success: number, failed: string[], skipped: number }
@@ -341,6 +402,8 @@ export class ConnectionManager {
     this.missingRetryCount.clear();
     this.requestingMissing = false;
     this.vehicleTypeDetected = false;
+    this.postConnectDone = false;
+    this.ftpClient = null;
   }
 
   private handleDisconnect(reason: string) {
@@ -359,6 +422,7 @@ export class ConnectionManager {
     useVehicleStore.getState().reset();
     useParameterStore.getState().reset();
     useCalibrationStore.getState().reset();
+    useTelemetryStore.getState().reset();
   }
 
   private clearAllTimers() {
@@ -411,6 +475,7 @@ export class ConnectionManager {
     }
 
     const packet = encodePacket(messageId, payload, crcExtra);
+
     try {
       if (window.electronAPI) {
         await window.electronAPI.serial.write(packet);
@@ -490,11 +555,21 @@ export class ConnectionManager {
       case MSG_ID_AUTOPILOT_VERSION:
         this.handleAutopilotVersion(packet);
         break;
+      case MSG_ID_ATTITUDE:
+        this.handleAttitude(packet);
+        break;
       case MSG_ID_MAG_CAL_PROGRESS:
         this.handleMagCalProgress(packet);
         break;
       case MSG_ID_MAG_CAL_REPORT:
         this.handleMagCalReport(packet);
+        break;
+      case MSG_ID_FILE_TRANSFER_PROTOCOL:
+        if (this.ftpClient) {
+          this.ftpClient.handleFtpMessage(packet.payload);
+        } else {
+          this.clog('FTP response received but no ftpClient active');
+        }
         break;
       default:
         // Log first occurrence of each unknown message type
@@ -513,11 +588,12 @@ export class ConnectionManager {
     if (this.targetSystem === 0) {
       this.targetSystem = packet.systemId;
       this.targetComponent = packet.componentId;
-      console.log(`FC detected: system=${this.targetSystem} component=${this.targetComponent}`);
+      this.clog(`FC detected: system=${this.targetSystem} component=${this.targetComponent}`);
     }
 
     const armed = (hb.baseMode & MAV_MODE_FLAG_SAFETY_ARMED) !== 0;
     useVehicleStore.getState().setArmed(armed);
+    useVehicleStore.getState().setFlightMode(hb.customMode);
     this.detectVehicleType(hb);
     this.resetHeartbeatWatchdog();
 
@@ -530,8 +606,65 @@ export class ConnectionManager {
       }
       console.log('Heartbeat received, requesting parameters...');
       useConnectionStore.getState().setStatus('loading');
-      this.requestParameterList();
+      this.downloadParameters();
     }
+  }
+
+  /**
+   * Try MAVFTP param download first, fall back to traditional PARAM_REQUEST_LIST.
+   * MAVFTP downloads @PARAM/param.parm as a file -- typically 5-10x faster.
+   */
+  private async downloadParameters() {
+    this.clog('Attempting MAVFTP param download...');
+    try {
+      this.ftpClient = new MavFtpClient({
+        targetSystem: this.targetSystem,
+        targetComponent: this.targetComponent,
+        sendPacket: (msgId, payload) => this.sendPacket(msgId, payload),
+        timeout: 1500, // 1.5s -- fast fail for boards without FTP
+        onProgress: (progress) => {
+          useConnectionStore.getState().setParamLoadProgress({
+            received: Math.round(progress * 100),
+            total: 100,
+          });
+        },
+        log: (msg) => this.clog(msg),
+      });
+
+      const params = await this.ftpClient.downloadParams();
+      this.ftpClient = null;
+
+      if (params && params.length > 0) {
+        this.clog(`MAVFTP: Downloaded ${params.length} params`);
+        const paramStore = useParameterStore.getState();
+        for (let i = 0; i < params.length; i++) {
+          paramStore.setParameter({
+            name: params[i].name,
+            value: params[i].value,
+            type: 'FLOAT',
+            index: i,
+          });
+        }
+        this.paramCount = params.length;
+        this.receivedIndices = new Set(params.map((_, i) => i));
+        this.onParamDownloadComplete();
+        return;
+      }
+      this.clog('MAVFTP: No params returned, falling back');
+    } catch (err) {
+      this.clog(`MAVFTP: Failed: ${err}`);
+    }
+    this.ftpClient = null;
+
+    // Fall back to traditional param download.
+    // Reset state -- stray PARAM_VALUE messages may have arrived during FTP attempt.
+    this.paramCount = 0;
+    this.receivedIndices.clear();
+    this.missingRetryCount.clear();
+    this.requestingMissing = false;
+    useParameterStore.getState().reset();
+    this.clog('Using traditional PARAM_REQUEST_LIST...');
+    this.requestParameterList();
   }
 
   private handleParamValue(packet: MavLinkPacket) {
@@ -560,6 +693,11 @@ export class ConnectionManager {
       type: mavParamTypeToString(pv.paramType),
       index: pv.paramIndex,
     });
+
+    // Don't update loading progress or trigger burst settle once connected.
+    // After FTP download, the FC still streams PARAM_VALUE messages unsolicited.
+    // Without this guard, the progress counter would show 906/905 etc.
+    if (this.postConnectDone) return;
 
     useConnectionStore.getState().setParamLoadProgress({
       received: this.receivedIndices.size,
@@ -915,6 +1053,11 @@ export class ConnectionManager {
       }
     }
 
+    // Capture PreArm messages for the readiness dashboard
+    if (st.text.startsWith('PreArm:') || st.text.startsWith('PreArm ')) {
+      usePreflightStore.getState().addPreArmMessage(st.text, st.severity);
+    }
+
     // Forward to calibration store when accel cal is active,
     // but only if the message is calibration-related. The FC also sends
     // unrelated messages during cal (e.g. "Pre-Arm: Waiting for RC")
@@ -1006,7 +1149,13 @@ export class ConnectionManager {
       alt: gps.alt / 1000,  // mm → m
       fix: gps.fixType,
       satellites: gps.satellitesVisible,
+      hdop: gps.hdop === 65535 ? -1 : gps.hdop / 100,  // cm → m, -1 = unknown
     });
+  }
+
+  private handleAttitude(packet: MavLinkPacket) {
+    const att = parseAttitude(packet.payload);
+    useTelemetryStore.getState().setAttitude(att);
   }
 
   private handleRcChannels(packet: MavLinkPacket) {
@@ -1104,7 +1253,7 @@ export class ConnectionManager {
     motorIndex: number,
     throttlePct: number,
     durationSec: number = 3
-  ): Promise<void> {
+  ): Promise<number> {
     // MAV_CMD_DO_MOTOR_TEST = 209
     // param1: motor instance (1-indexed)
     // param2: throttle type (0 = percent)
@@ -1112,7 +1261,7 @@ export class ConnectionManager {
     // param4: timeout seconds
     // param5: motor count (0 = just this one)
     // param6: test order (0 = default)
-    await this.sendCommandLong(
+    const result = await this.sendCommandWithAck(
       209,
       motorIndex,
       0,
@@ -1121,7 +1270,16 @@ export class ConnectionManager {
       0,
       0
     );
-    console.log(`Motor test: motor=${motorIndex} throttle=${throttlePct}% duration=${durationSec}s`);
+    const resultNames: Record<number, string> = {
+      0: 'ACCEPTED', 1: 'TEMPORARILY_REJECTED', 2: 'DENIED',
+      3: 'UNSUPPORTED', 4: 'FAILED', 5: 'IN_PROGRESS',
+      [-1]: 'TIMEOUT (no ACK)',
+    };
+    console.log(
+      `Motor test: instance=${motorIndex} throttle=${throttlePct}% duration=${durationSec}s` +
+      ` -> ACK: ${resultNames[result] ?? result}`
+    );
+    return result;
   }
 
   /**
@@ -1254,8 +1412,20 @@ export class ConnectionManager {
    * Send a preflight reboot command to the FC.
    * param1: 1 = reboot autopilot, 0 = do nothing
    * param2: 1 = reboot companion computer, 0 = do nothing
+   *
+   * Includes a 15-second cooldown guard to prevent accidental reboot loops.
    */
+  private lastRebootTime = 0;
+  private static REBOOT_COOLDOWN_MS = 15000;
+
   async rebootFlightController(): Promise<number> {
+    const now = Date.now();
+    const elapsed = now - this.lastRebootTime;
+    if (elapsed < ConnectionManager.REBOOT_COOLDOWN_MS) {
+      console.warn(`[Reboot] Blocked -- only ${(elapsed / 1000).toFixed(1)}s since last reboot (cooldown: ${ConnectionManager.REBOOT_COOLDOWN_MS / 1000}s)`);
+      return 0; // Return success to avoid error handling in callers
+    }
+    this.lastRebootTime = now;
     return this.sendCommandWithAck(MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 1, 0, 0, 0, 0, 0, 0, 5000);
   }
 
@@ -1266,6 +1436,35 @@ export class ConnectionManager {
    */
   async resetToDefaults(): Promise<number> {
     return this.sendCommandWithAck(MAV_CMD_PREFLIGHT_STORAGE, 2, 0, 0, 0, 0, 0, 0, 10000);
+  }
+
+  /**
+   * Set the flight controller's mode.
+   * Uses MAV_CMD_DO_SET_MODE (176) with MAV_MODE_FLAG_CUSTOM_MODE_ENABLED.
+   * @param customMode ArduPilot custom mode number (e.g., 0=Manual, 17=QStabilize for Plane)
+   */
+  async setFlightMode(customMode: number): Promise<number> {
+    return this.sendCommandWithAck(MAV_CMD_DO_SET_MODE, 1, customMode, 0, 0, 0, 0, 0, 5000);
+  }
+
+  /**
+   * Request the FC to run all pre-arm checks and report failures via STATUSTEXT.
+   * MAV_CMD_RUN_PREARM_CHECKS (401). If the FC doesn't support this command,
+   * PreArm messages still arrive naturally from the periodic check loop.
+   */
+  async requestPreArmCheck(): Promise<void> {
+    const store = usePreflightStore.getState();
+    store.clearFailures();
+    store.setChecking(true);
+    try {
+      await this.sendCommandLong(401, 0, 0, 0, 0, 0, 0, 0);
+    } catch {
+      // Command may not be supported -- that's OK, PreArm messages still arrive
+    }
+    // Give the FC a few seconds to send all PreArm STATUSTEXT messages
+    setTimeout(() => {
+      store.markCheckComplete();
+    }, 3000);
   }
 
   // --- Vehicle Detection ---
@@ -1384,8 +1583,14 @@ export class ConnectionManager {
     const av = parseAutopilotVersion(packet.payload);
     console.log(`AUTOPILOT_VERSION: boardVersion=${av.boardVersion} vendor=${av.vendorId} product=${av.productId} flightSw=0x${av.flightSwVersion.toString(16)}`);
 
-    // Extract firmware version from flightSwVersion (encoded as major.minor.patch.type)
     const vehicleStore = useVehicleStore.getState();
+
+    // Always store the numeric APJ_BOARD_ID for firmware matching
+    if (av.boardVersion > 0) {
+      vehicleStore.setApjBoardId(av.boardVersion);
+    }
+
+    // Extract firmware version from flightSwVersion (encoded as major.minor.patch.type)
     if (!vehicleStore.firmwareVersion && av.flightSwVersion > 0) {
       const major = (av.flightSwVersion >> 24) & 0xFF;
       const minor = (av.flightSwVersion >> 16) & 0xFF;
@@ -1405,7 +1610,6 @@ export class ConnectionManager {
 
     const board = detectBoardFromId(av.boardVersion);
     if (board) {
-      const vehicleStore = useVehicleStore.getState();
       if (vehicleStore.boardId !== board.id) {
         console.log(`Board identified: ${board.name} (APJ_BOARD_ID=${av.boardVersion})`);
         vehicleStore.setBoardId(board.id);

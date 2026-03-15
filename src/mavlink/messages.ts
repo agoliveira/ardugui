@@ -125,6 +125,7 @@ export const MSG_ID_COMMAND_ACK = 77;
 export const MSG_ID_MAG_CAL_PROGRESS = 191;
 export const MSG_ID_MAG_CAL_REPORT = 192;
 export const MSG_ID_AUTOPILOT_VERSION = 148;
+export const MSG_ID_FILE_TRANSFER_PROTOCOL = 110;
 export const MSG_ID_STATUSTEXT = 253;
 
 // --- CRC Extras (per message type) ---
@@ -147,6 +148,7 @@ export const CRC_EXTRAS: Map<number, number> = new Map([
   [MSG_ID_MAG_CAL_PROGRESS, 92],
   [MSG_ID_MAG_CAL_REPORT, 36],
   [MSG_ID_AUTOPILOT_VERSION, 178],
+  [MSG_ID_FILE_TRANSFER_PROTOCOL, 84],
   [MSG_ID_STATUSTEXT, 83],
 ]);
 
@@ -268,6 +270,7 @@ export interface MagCalReport {
 }
 
 // --- Command IDs ---
+export const MAV_CMD_DO_SET_MODE = 176;
 export const MAV_CMD_PREFLIGHT_CALIBRATION = 241;
 export const MAV_CMD_PREFLIGHT_STORAGE = 245;
 export const MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN = 246;
@@ -613,6 +616,29 @@ export function parseGpsRawInt(payload: Uint8Array): GpsRawInt {
   };
 }
 
+// --- ATTITUDE (msg #30) ---
+
+export interface Attitude {
+  roll: number;       // rad (-π to +π)
+  pitch: number;      // rad (-π to +π)
+  yaw: number;        // rad (-π to +π)
+  rollspeed: number;  // rad/s
+  pitchspeed: number; // rad/s
+  yawspeed: number;   // rad/s
+}
+
+export function parseAttitude(payload: Uint8Array): Attitude {
+  // Layout: uint32 time_boot_ms (0-3), then 6 floats
+  return {
+    roll: readFloat32(payload, 4),
+    pitch: readFloat32(payload, 8),
+    yaw: readFloat32(payload, 12),
+    rollspeed: readFloat32(payload, 16),
+    pitchspeed: readFloat32(payload, 20),
+    yawspeed: readFloat32(payload, 24),
+  };
+}
+
 // --- SYS_STATUS (msg #1) ---
 
 export interface SysStatus {
@@ -658,6 +684,7 @@ export const MSG_NAMES: Record<number, string> = {
   [MSG_ID_MAG_CAL_PROGRESS]: 'MAG_CAL_PROGRESS',
   [MSG_ID_MAG_CAL_REPORT]: 'MAG_CAL_REPORT',
   [MSG_ID_AUTOPILOT_VERSION]: 'AUTOPILOT_VERSION',
+  [MSG_ID_FILE_TRANSFER_PROTOCOL]: 'FILE_TRANSFER_PROTOCOL',
   [MSG_ID_STATUSTEXT]: 'STATUSTEXT',
 };
 

@@ -21,6 +21,8 @@ import {
   type MotorDef,
 } from '@/models/frameDefinitions';
 import { useDetectedPreset } from '@/hooks/useDetectedPreset';
+import { useTelemetryStore } from '@/store/telemetryStore';
+import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import { AirframeIcon, AIRFRAME_VIEWBOX, QUAD } from '@/components/AirframeIcons';
 
 const V = AIRFRAME_VIEWBOX;
@@ -37,6 +39,7 @@ const MC = {
   port: '#ffaa2a',
   starboard: '#22d3ee',
   bodyDim: '#94a3b8',
+  testing: '#ffcc66',
 };
 
 
@@ -54,43 +57,18 @@ function CopterMotorOverlay({
 }) {
   const { cx, cy } = QUAD;
 
-  // Scale by unique arm positions, not total motor count (coaxial frames)
-  const armPositions = new Set(motors.map(m => `${m.x.toFixed(3)},${m.y.toFixed(3)}`));
-  const arms = armPositions.size;
-  const scale = arms <= 4
+  // Use the same scale function as AirframeIcons
+  const scale = motors.length <= 4
     ? { r: 10, arm: 32 }
-    : arms <= 6
+    : motors.length <= 6
       ? { r: 8, arm: 36 }
       : { r: 6, arm: 38 };
 
-  // Detect coaxial pairs (same x,y position) -- offset bottom motors outward
-  const posKey = (m: MotorDef) => `${m.x.toFixed(3)},${m.y.toFixed(3)}`;
-  const posGroups = new Map<string, number[]>();
-  motors.forEach((m, i) => {
-    const k = posKey(m);
-    if (!posGroups.has(k)) posGroups.set(k, []);
-    posGroups.get(k)!.push(i);
-  });
-  const coaxialOffset = scale.r * 0.45;
-
   return (
     <>
-      {motors.map((m, idx) => {
-        let mx = cx + m.x * scale.arm;
-        let my = cy - m.y * scale.arm;
-
-        // Offset bottom coaxial motor outward from center
-        const k = posKey(m);
-        const group = posGroups.get(k)!;
-        const isBottom = group.length >= 2 && idx === group[1];
-        if (isBottom) {
-          const dx = mx - cx;
-          const dy = my - cy;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          mx += (dx / dist) * coaxialOffset;
-          my += (dy / dist) * coaxialOffset;
-        }
-
+      {motors.map((m) => {
+        const mx = cx + m.x * scale.arm;
+        const my = cy - m.y * scale.arm;
         const isTesting = testingMotor === m.number;
         const color = isTesting ? '#ffcc66' : m.rotation === 'CCW' ? MC.ccw : MC.cw;
         const dimmed = !enabled && !isTesting;
@@ -124,11 +102,10 @@ function CopterMotorOverlay({
             className={enabled ? 'cursor-pointer' : 'cursor-not-allowed'}
             onClick={() => enabled && onMotorClick(m.number)}
             opacity={dimmed ? 0.35 : 1}>
-            {/* Background disc to mask AirframeIcon's base layer */}
+            {/* Background disc to mask AirframeIcon's ring */}
             <circle cx={mx} cy={my} r={r + 2} fill={MC.bg} />
-            {/* Motor ring -- dashed for bottom coaxial motor */}
-            <circle cx={mx} cy={my} r={r} fill={MC.bg} stroke={color} strokeWidth={2}
-              strokeDasharray={isBottom ? '4,2' : 'none'} />
+            {/* Motor ring */}
+            <circle cx={mx} cy={my} r={r} fill={MC.bg} stroke={color} strokeWidth={2} />
             {/* Rotation arc */}
             <path d={`M ${sx},${sy} A ${arcR},${arcR} 0 1,${sweepFlag} ${ex},${ey}`}
               fill="none" stroke={color} strokeWidth="1" opacity="0.5" />
@@ -157,9 +134,11 @@ function CopterMotorOverlay({
 function PlaneServoOverlay({
   servoFunctions,
   SERVO_FUNCTIONS: funcNames,
+  testingMotor,
 }: {
   servoFunctions: Map<number, number>;
   SERVO_FUNCTIONS: Record<number, string>;
+  testingMotor?: number | null;
 }) {
   const assignments: { output: number; func: number; name: string }[] = [];
   servoFunctions.forEach((func, output) => {
@@ -193,9 +172,15 @@ function PlaneServoOverlay({
     return MC.neutral;
   };
 
-  // Labels positioned outside the 100x100 icon area within the wider viewBox
+  // Determine which motor output number maps to which test instance
+  // Motor functions: 33=Motor1, 34=Motor2... 70=Throttle (instance 1)
+  const motorTestInstance = (func: number): number => {
+    if (func >= 33 && func <= 40) return func - 32;
+    return 1; // Throttle (70) is always instance 1
+  };
+
   const VW = 160, VH = 120;
-  const ox = (VW - V) / 2; // icon x offset within wider viewBox
+  const ox = (VW - V) / 2;
 
   return (
     <>
@@ -226,14 +211,29 @@ function PlaneServoOverlay({
         );
       })}
 
-      {/* Motor labels */}
+      {/* Motor labels -- positioned near the nose, right side */}
       {motor.map((a, i) => {
         const color = funcColor(a.func);
+        const instance = motorTestInstance(a.func);
+        const isTesting = testingMotor === instance;
+        const labelX = VW - 6;
+        const labelY = VH / 2 - 4 - (motor.length - 1) * 4 + i * 9;
         return (
-          <text key={`mot-${a.output}`} x={VW / 2 + 12} y={ox + 6 + i * 8} textAnchor="start"
-            fill={color} fontSize="4.5" fontFamily="ui-monospace, monospace" fontWeight="800">
-            S{a.output}: {a.name}
-          </text>
+          <g key={`mot-${a.output}`}>
+            {/* Spinning indicator */}
+            {isTesting && (
+              <circle cx={labelX - 2} cy={labelY - 1.5} r={3} fill="none"
+                stroke={MC.testing} strokeWidth={1} opacity={0.8}>
+                <animate attributeName="r" values="3;6;3" dur="1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1s" repeatCount="indefinite" />
+              </circle>
+            )}
+            <text x={labelX} y={labelY} textAnchor="end"
+              fill={isTesting ? MC.testing : color} fontSize="4.5"
+              fontFamily="ui-monospace, monospace" fontWeight="800">
+              S{a.output}: {a.name}{isTesting ? ' \u25CF' : ''}
+            </text>
+          </g>
         );
       })}
 
@@ -496,6 +496,7 @@ function MotorTestControls({
 export function MotorsPage() {
   const vehicleType = useVehicleStore((s) => s.type);
   const armed = useVehicleStore((s) => s.armed);
+  const battery = useTelemetryStore((s) => s.battery);
   const parameters = useParameterStore((s) => s.parameters);
   const dirtyParams = useParameterStore((s) => s.dirtyParams);
 
@@ -511,12 +512,14 @@ export function MotorsPage() {
 
   const detectedPreset = useDetectedPreset();
 
-  const frameClass = dirtyParams.get('FRAME_CLASS') ?? parameters.get('FRAME_CLASS')?.value ?? 0;
-  const frameType = dirtyParams.get('FRAME_TYPE') ?? parameters.get('FRAME_TYPE')?.value ?? 0;
+  // Resolve frame class: staged (wizard) > dirty > FC params
+  const wizardStaged = useWizardStore((s) => s.stagedParams);
+  const frameClass = wizardStaged['FRAME_CLASS'] ?? dirtyParams.get('FRAME_CLASS') ?? parameters.get('FRAME_CLASS')?.value ?? 0;
+  const frameType = wizardStaged['FRAME_TYPE'] ?? dirtyParams.get('FRAME_TYPE') ?? parameters.get('FRAME_TYPE')?.value ?? 0;
   const copterLayout = isCopter ? getFrameLayout(frameClass, frameType) : null;
 
-  const qFrameClass = isQuadPlane ? (dirtyParams.get('Q_FRAME_CLASS') ?? parameters.get('Q_FRAME_CLASS')?.value ?? 0) : 0;
-  const qFrameType = isQuadPlane ? (dirtyParams.get('Q_FRAME_TYPE') ?? parameters.get('Q_FRAME_TYPE')?.value ?? 0) : 0;
+  const qFrameClass = isQuadPlane ? (wizardStaged['Q_FRAME_CLASS'] ?? dirtyParams.get('Q_FRAME_CLASS') ?? parameters.get('Q_FRAME_CLASS')?.value ?? 0) : 0;
+  const qFrameType = isQuadPlane ? (wizardStaged['Q_FRAME_TYPE'] ?? dirtyParams.get('Q_FRAME_TYPE') ?? parameters.get('Q_FRAME_TYPE')?.value ?? 0) : 0;
   const qpLayout = isQuadPlane ? getFrameLayout(qFrameClass, qFrameType) : null;
 
   const motorLayout = isCopter ? copterLayout : qpLayout;
@@ -531,7 +534,32 @@ export function MotorsPage() {
   }, [parameters, dirtyParams]);
 
   const showPlaneDiagram = isPlane || isQuadPlane;
-  const controlsEnabled = safetyAck && testEnabled && !armed;
+  const hasBattery = battery !== null && battery.voltage > 1;
+  const controlsEnabled = hasBattery && safetyAck && testEnabled && !armed;
+
+  // Derive testable motors from SERVO_FUNCTION assignments as fallback
+  // when no preset is detected (e.g. custom output mapping)
+  const detectedMotors = useMemo(() => {
+    const motorFuncs = new Set([33, 34, 35, 36, 37, 38, 39, 40]);
+    const motors: { number: number; output: number; label: string }[] = [];
+    for (let i = 1; i <= 16; i++) {
+      const func = dirtyParams.get(`SERVO${i}_FUNCTION`) ?? parameters.get(`SERVO${i}_FUNCTION`)?.value;
+      if (func !== undefined && motorFuncs.has(func)) {
+        const motorNum = func - 32; // func 33 = Motor 1, 34 = Motor 2, etc.
+        motors.push({ number: motorNum, output: i, label: `Motor ${motorNum} (S${i})` });
+      }
+    }
+    // Also check for throttle (plane forward motor)
+    for (let i = 1; i <= 16; i++) {
+      const func = dirtyParams.get(`SERVO${i}_FUNCTION`) ?? parameters.get(`SERVO${i}_FUNCTION`)?.value;
+      if (func === 70) {
+        motors.push({ number: 0, output: i, label: `Throttle (S${i})` });
+      }
+    }
+    return motors.sort((a, b) => a.number - b.number);
+  }, [parameters, dirtyParams]);
+
+  const hasMotorsWithoutPreset = detectedMotors.length > 0 && !detectedPreset;
 
   const stopMotors = useCallback(() => {
     connectionManager.motorTest(0, 0, 0).catch(() => {});
@@ -588,6 +616,19 @@ export function MotorsPage() {
       </div>
 
       {/* ============ SAFETY BANNER ============ */}
+      {!hasBattery && (
+        <div className="flex items-start gap-3 rounded border border-yellow-600/40 bg-yellow-900/20 px-4 py-3">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-yellow-500" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-yellow-400">
+              No battery detected
+            </p>
+            <p className="mt-1 text-xs text-yellow-500/80">
+              Motors will not spin without a power source. Connect a battery to test.
+            </p>
+          </div>
+        </div>
+      )}
       {!safetyAck ? (
         <div className="flex items-start gap-3 rounded border border-yellow-600/40 bg-yellow-900/20 px-4 py-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-yellow-500" />
@@ -661,6 +702,7 @@ export function MotorsPage() {
             <PlaneServoOverlay
               servoFunctions={servoFunctions}
               SERVO_FUNCTIONS={SERVO_FUNCTIONS}
+              testingMotor={testingMotor}
             />
           </svg>
           <p className="mt-2 text-center text-[15px] text-subtle">
@@ -691,8 +733,8 @@ export function MotorsPage() {
               <polygon points={`${QUAD.cx - 3},14 ${QUAD.cx + 3},14 ${QUAD.cx},10`} fill={MC.nose} />
               <text x={QUAD.cx} y="19" textAnchor="middle" fill={MC.nose} fontSize="4.5"
                 fontFamily="ui-monospace, monospace" fontWeight="800">FRONT</text>
-              {/* AirframeIcon as base silhouette (ghost = no motor rings, overlay handles those) */}
-              <AirframeIcon preset={detectedPreset} size={V} selected={false} ghost={true} />
+              {/* AirframeIcon as base silhouette */}
+              <AirframeIcon preset={detectedPreset} size={V} selected={false} />
               {/* Interactive motor overlay */}
               <CopterMotorOverlay
                 motors={motorLayout.motors}
@@ -777,6 +819,54 @@ export function MotorsPage() {
 
       {/* ============ SERVO TABLE -- ALL VEHICLE TYPES ============ */}
       <ServoTable />
+
+      {/* ============ MOTOR TEST from SERVO_FUNCTION scan (no preset needed) ============ */}
+      {hasMotorsWithoutPreset && (
+        <div className="card">
+          <div className="card-header">Motor Test</div>
+          <div className={!controlsEnabled ? 'pointer-events-none opacity-40' : ''}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-subtle">
+                  Test Throttle: {testThrottle}%
+                </label>
+                <input type="range" min={1} max={30} value={testThrottle}
+                  onChange={(e) => setTestThrottle(Number(e.target.value))}
+                  disabled={!controlsEnabled} className="mt-1 w-full accent-accent" />
+                <div className="flex justify-between text-base text-muted">
+                  <span>1%</span><span>30% max</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-subtle">
+                  Duration: {testDuration}s
+                </label>
+                <input type="range" min={1} max={10} value={testDuration}
+                  onChange={(e) => setTestDuration(Number(e.target.value))}
+                  disabled={!controlsEnabled} className="mt-1 w-full accent-accent" />
+                <div className="flex justify-between text-base text-muted">
+                  <span>1s</span><span>10s</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {detectedMotors.map((m) => (
+                  <button key={`${m.number}-${m.output}`}
+                    onClick={() => handleMotorTest(m.number)}
+                    disabled={!controlsEnabled || testingMotor !== null}
+                    className={`btn h-9 gap-1 px-3 text-xs ${
+                      testingMotor === m.number ? 'btn-primary animate-pulse' : 'btn-ghost'
+                    }`}>
+                    {testingMotor === m.number
+                      ? <Cog size={12} className="animate-spin" />
+                      : <Play size={12} />}
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============ MOTOR TEST for planes without VTOL layout ============ */}
       {(isPlane || (isQuadPlane && !qpLayout)) && (

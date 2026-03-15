@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw, Plug, Unplug, AlertCircle, Loader2,
-  Box, Activity, Database, Shield, Cpu, Hash,
+  Box, Activity, Database, Shield, Cpu, Hash, Wand2,
 } from 'lucide-react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
@@ -9,6 +9,7 @@ import { useParameterStore } from '@/store/parameterStore';
 import { connectionManager } from '@/mavlink/connection';
 import { detectBoard, getBoardById } from '@/models/boardRegistry';
 import { BoardDiagram } from '@/components/BoardDiagram';
+import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import type { PortInfo } from '@/store/connectionStore';
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
@@ -37,6 +38,7 @@ export function SetupPage() {
   const isConnecting = status === 'connecting' || status === 'identifying' || status === 'loading';
   const detectedBoard = boardId ? getBoardById(boardId) : null;
 
+  // Manual port scan -- used as fallback and for the refresh button
   const scanPorts = useCallback(async () => {
     setScanning(true);
     try {
@@ -56,11 +58,49 @@ export function SetupPage() {
         setAvailablePorts(mockPorts);
         if (!portPath) setPortPath(mockPorts[0].path);
       }
-    } catch (err) { console.error('Port scan failed:', err); }
+    } catch { /* ignore */ }
     finally { setScanning(false); }
   }, [portPath, setAvailablePorts, setPortPath]);
 
-  useEffect(() => { scanPorts(); }, [scanPorts]);
+  // Auto-detect USB port changes -- start watcher on mount
+  useEffect(() => {
+    if (!window.electronAPI?.serial?.startPortWatch) {
+      // No watcher available -- fall back to one-time scan
+      scanPorts();
+      return;
+    }
+
+    // Start the port watcher (polls every 1.5s in main process)
+    window.electronAPI.serial.startPortWatch();
+
+    const cleanup = window.electronAPI.serial.onPortsChanged((ports) => {
+      const prevPaths = new Set(useConnectionStore.getState().availablePorts.map((p) => p.path));
+      const portList: PortInfo[] = ports.map((p) => ({
+        path: p.path, manufacturer: p.manufacturer, serialNumber: p.serialNumber,
+        vendorId: p.vendorId, productId: p.productId, pnpId: p.pnpId,
+      }));
+      setAvailablePorts(portList);
+
+      // Auto-select newly appeared port (the one just plugged in)
+      const currentPath = useConnectionStore.getState().portPath;
+      const currentStatus = useConnectionStore.getState().status;
+      if (currentStatus !== 'connected' && currentStatus !== 'connecting') {
+        const newPort = portList.find((p) => !prevPaths.has(p.path));
+        if (newPort) {
+          setPortPath(newPort.path);
+        } else if (!currentPath || !portList.some((p) => p.path === currentPath)) {
+          // Previously selected port disappeared -- pick first available
+          if (portList.length > 0) setPortPath(portList[0].path);
+        }
+      }
+    });
+
+    return () => {
+      cleanup();
+      window.electronAPI?.serial?.stopPortWatch();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleConnect = async () => {
     if (!portPath) return;
@@ -224,6 +264,22 @@ export function SetupPage() {
         <p className="mt-1 text-lg text-muted">
           {firmwareType} {firmwareVersion} on {portPath}
         </p>
+      </div>
+
+      {/* Setup Wizard -- secondary entry point (primary is sidebar) */}
+      <div className="flex items-center gap-3 rounded border border-border bg-surface-0 px-4 py-3">
+        <Wand2 size={16} className="shrink-0 text-accent" />
+        <p className="flex-1 text-sm text-muted">
+          New aircraft? Use the <strong className="text-foreground">Setup Wizard</strong> for guided first-flight configuration.
+        </p>
+        <button
+          onClick={() => vehicleType && useWizardStore.getState().start(vehicleType)}
+          disabled={armed || !vehicleType}
+          className="btn btn-ghost gap-1.5 text-accent text-xs"
+        >
+          <Wand2 size={13} />
+          Start Wizard
+        </button>
       </div>
 
       {/* FC info -- horizontal strip of info cells */}

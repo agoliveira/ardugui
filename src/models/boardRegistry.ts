@@ -6,7 +6,12 @@
  *
  * Sources: ArduPilot hwdef.dat files, wiki pages, manufacturer docs.
  * Detection via USB vendor/product IDs from serial enumeration.
+ *
+ * Fallback: boardData.ts (414 auto-generated boards from hwdef) is
+ * checked when a board isn't in the hand-coded registry below.
  */
+
+import { getExtendedBoard, getExtendedBoardByName, ALL_EXTENDED_BOARDS } from './boardData';
 
 export interface BoardConnector {
   /** Connector label printed on the board */
@@ -870,16 +875,28 @@ const BOARD_ID_MAP: Map<number, BoardDef> = new Map([
 /**
  * Detect board from APJ_BOARD_ID (AUTOPILOT_VERSION.board_version).
  * This is the most reliable identification method -- the ID is baked into the firmware.
+ * Checks hand-coded boards first, then falls back to 414-board generated database.
  */
 export function detectBoardFromId(boardVersion: number): BoardDef | null {
-  return BOARD_ID_MAP.get(boardVersion) || null;
+  // Hand-coded boards first (confirmed, richer data)
+  const handCoded = BOARD_ID_MAP.get(boardVersion);
+  if (handCoded) return handCoded;
+
+  // Fall back to generated board data (matched by APJ_BOARD_ID)
+  return getExtendedBoard(boardVersion);
 }
 
 /**
  * Get board by ID.
+ * Checks hand-coded boards first, then falls back to the 414-board generated database.
  */
 export function getBoardById(id: string): BoardDef | null {
-  return ALL_BOARDS.find((b) => b.id === id) || null;
+  // Hand-coded boards (confirmed, may have richer data like suggestedUse)
+  const handCoded = ALL_BOARDS.find((b) => b.id === id);
+  if (handCoded) return handCoded;
+
+  // Fall back to generated board data
+  return getExtendedBoardByName(id);
 }
 
 /**

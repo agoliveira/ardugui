@@ -1,252 +1,193 @@
 # ArduGUI -- TODO / Roadmap
 
-Last updated: February 2026
+Last updated: March 13, 2026
 
-This is the working roadmap for ArduGUI. The overarching goal is **feature completeness
-before the Setup Wizard**, because the wizard is a pipeline that links every page together
-into a single "zero to flyable" flow. Every page it touches needs to exist and work first.
+**Mission:** Make ArduPilot as easy to configure as INAV, or easier. ArduGUI is a
+configurator, not a ground station. It takes a user's craft from zero to test flight
+-- either from scratch or migrating from INAV. Telemetry, mission planning, and
+tuning assistance are out of scope (that's what Mission Planner and QGC are for).
 
----
-
-## Legend
-
-- **[ ]** Not started
-- **[~]** In progress / partially done
-- **[x]** Complete (or good enough for now)
+Legend: [x] done, [~] partial, [ ] not started
 
 ---
 
-## V1 -- Pre-Wizard: Feature Completeness
+## V1 Scope: Zero to Test Flight
 
-These are the building blocks the wizard will chain together. Each should be
-a standalone, usable page before the wizard references it.
+The V1 release covers exactly one flow: user has a board, wants to fly ArduPilot.
+Two entry points:
 
-### Calibration
+1. **Start Fresh** -- flash firmware, factory reset, wizard, calibrate, fly
+2. **Migrate from INAV** -- import config, wizard pre-fills, review, calibrate, fly
 
-- [x] Accelerometer 6-position calibration with 3D model viewer
-- [x] Level trim (separate one-click card)
-- [~] Compass calibration -- works but clunky
-  - [ ] 3D sphere visualization using existing GLB models
-  - [ ] Color-code visited orientations (green = covered, gray = missing)
-  - [ ] Show which areas still need rotation before completion
-  - [ ] Progress percentage based on sphere coverage
-- [ ] RC calibration (stick endpoints + trim)
-  - [ ] "Move all sticks to extremes" flow (INAV-style)
-  - [ ] Min/max/trim auto-capture per channel
-  - [ ] Visual stick position indicator during calibration
-  - [ ] Channel mapping / reorder support
-
-### Configuration Pages
-
-- [x] Frame Wizard -- airframe selection, servo mapping, output assignment
-- [x] Motor test with safety interlocks
-- [x] Motor diagram -- frame-specific SVG with correct numbering/rotation
-- [x] Ports page -- serial protocol assignment with board-aware labels
-- [x] Flight Modes -- INAV-style range sliders with RC binding
-- [x] Receiver page -- RC input visualization
-- [~] Configuration page -- grouped parameter editing (needs more groups)
-- [~] PID Tuning -- parameter editing works, no graphing
-- [~] Failsafes -- skeleton, needs full implementation
-- [~] Navigation -- geofence/RTL skeleton
-- [ ] Battery monitor setup
-  - [ ] Voltage divider calibration with live voltage readout
-  - [ ] Current sensor scaling with live current readout
-  - [ ] Cell count detection / manual entry
-  - [ ] Capacity (mAh) setting
-  - [ ] Low voltage / critical voltage thresholds (ties into failsafes)
-- [ ] Motor protocol selection
-  - [ ] DShot150 / DShot300 / DShot600 / PWM / OneShot125 selection
-  - [ ] Visual explanation of which protocol to use when
-  - [ ] Warning when changing protocol on already-configured ESCs
-- [ ] ESC configuration area
-  - [ ] ArduPilot-side ESC parameters grouped (MOT_PWM_MIN, MOT_PWM_MAX,
-    MOT_SPIN_ARM, MOT_SPIN_MIN, MOT_THST_EXPO)
-  - [ ] Motor output range visualization
-  - [ ] DShot direction reversal commands (if DShot selected)
-  - [ ] (V2 stretch) BLHeli passthrough
-- [ ] GPS page with map
-  - [ ] Live position on map (Leaflet or MapLibre)
-  - [ ] Satellite count, HDOP, fix type display
-  - [ ] GPS protocol and baud rate configuration
-  - [ ] GPS update rate setting
-  - [ ] Dual-GPS support for boards with two GPS ports
-- [ ] Magnetometer alignment page (INAV Configurator style)
-  - [ ] Visual compass rose with live heading
-  - [ ] Orientation selection (CW0, CW90, CW180, CW270, etc.)
-  - [ ] Auto-detect orientation option
-  - [ ] External vs internal compass selection
-  - [ ] Declination setting (auto from GPS or manual)
-- [ ] Arming checks configuration
-  - [ ] ARMING_CHECK bitmask editor with checkboxes
-  - [ ] Live pre-arm status display (parse STATUSTEXT for PreArm messages)
-  - [ ] Color-coded pass/fail per check category
-  - [ ] Warnings when disabling safety-critical checks
-- [ ] Initial tune / filter parameters
-  - [ ] INS_GYRO_FILTER, INS_ACCEL_FILTER
-  - [ ] ATC_RAT_*_FILT (rate controller filters)
-  - [ ] MOT_SPIN_ARM, MOT_SPIN_MIN, MOT_THST_EXPO
-  - [ ] Suggested values based on frame size (prop size -> filter freq)
-
-### OSD
-
-- [~] OSD editor -- canvas drag-and-drop works
-- [ ] Save / load user OSD profiles
-  - [ ] Export to .osd.json file
-  - [ ] Import from .osd.json file
-  - [ ] Bundled presets (already partially done)
-  - [ ] Apply same OSD layout across multiple aircraft
-
-### Parameter Management
-
-- [x] Full parameter search, filter, edit (CLI page)
-- [x] Dirty tracking with write-back to FC
-- [x] Save dialog with review
-- [x] Parameter backup / restore (SQLite-backed)
-  - [x] Save full parameter set as snapshot (manual + auto on connect)
-  - [x] SQLite storage with aircraft / snapshot / param tables
-  - [x] Browse snapshot history per aircraft
-  - [x] Diff any snapshot against current FC parameters
-  - [x] Selective restore (checkbox per param, loads as dirty changes)
-  - [x] Export snapshot to .param file (Mission Planner compatible)
-  - [x] Import .param file as snapshot with diff view
-  - [x] Auto-backup on connect (ask user first time, remember preference)
-  - [x] Rename / delete snapshots
-  - [x] Multi-aircraft support (each FC gets its own history)
-
-### Pre-arm / Status
-
-- [ ] Pre-arm check display (prominent, not buried in debug console)
-  - [ ] Card on Setup page showing all pre-arm failures
-  - [ ] Parse STATUSTEXT "PreArm:" messages in real-time
-  - [ ] Link each failure to the relevant configuration page
-  - [ ] Green all-clear indicator when ready to arm
+Every V1 task must serve one of these paths. If it doesn't help a user get to a
+test flight, it's V1.5 or V2.
 
 ---
 
-## V1 -- The Setup Wizard
+## V1 -- Bugs (Fix Before Release)
 
-The killer feature. Only start this once the pages above are solid.
-
-The wizard asks questions and configures the aircraft step by step:
-
-1. **Aircraft type** -- Copter / Plane / VTOL (auto-detected if already connected)
-2. **Frame selection** -- links to Frame Wizard (already built)
-3. **Motor protocol** -- DShot / PWM / OneShot (links to Motor Protocol page)
-4. **ESC configuration** -- spin-arm, spin-min, output range
-5. **Receiver setup** -- protocol, channel mapping, RC calibration
-6. **Flight modes** -- links to Modes page with sensible defaults
-7. **GPS configuration** -- protocol, baud, update rate
-8. **Compass calibration** -- 3D sphere visualization
-9. **Accelerometer calibration** -- 3D model viewer (already built)
-10. **Battery monitor** -- voltage/current calibration
-11. **Failsafes** -- battery, RC loss, GCS loss with recommended defaults
-12. **Initial tune** -- suggest PID values based on frame size / prop size / weight
-13. **Pre-flight check** -- run through all pre-arm checks, show pass/fail
-14. **Summary** -- review all settings, save to FC, suggest parameter backup
-
-Design principles:
-- Each step can be skipped ("I'll do this later")
-- Each step links to the full page for advanced configuration
-- Progress is saved -- can resume where you left off
-- Suggested defaults for everything, expert overrides available
-- Plain language throughout -- "How big are your propellers?" not "Set MOT_THST_EXPO"
+- [x] **ReceiverStep change guard** -- fixed: one-way state latch replaces useRef.
+- [x] **FrameStep selection not persisted** -- fixed: copter drill-down auto-derived from preset.
+- [x] **Frame diagram missing after import** -- fixed: useDetectedPreset reads stagedParams.
+- [x] **Auto cell count** -- fixed: mapToArduPilot accepts liveVoltage param, estimates
+      cells from battery voltage when bat_cells=0. Flags default with warning.
 
 ---
 
-## V1 -- Pre-Release Polish
+## V1 -- Firmware Flashing (Polish)
 
-### Visual Identity Refresh
-- [x] Study ArduDeck's visual language, identify where ArduGUI overlaps
-- [x] Redesign areas that feel too similar (sidebar, cards, headers, spacing)
-- [x] Chose "Forge" identity: warm charcoal backgrounds + marigold accent (#ffaa2a)
-- [x] Distinct from ArduDeck (navy+amber), Betaflight (gray+yellow), INAV (light+green)
-- [x] WCAG AA contrast ratios verified for outdoor/older-user readability
-- [x] Utilitarian interface: flat buttons, 3-4px radii, no gradients/shadows
-- [x] Compact header (40px), slim footer (28px), narrow sidebar (160px)
-- [x] VS Code-style left-border active indicator in sidebar
-- [x] Updated all hardcoded colors across components (SVGs, Three.js, Tailwind classes)
-- [x] Reworked airframe icons: thin line-art copters, motor-count scaling, slim planes
-- [x] Fixed H-frame motor positions (was identical to X, now wider horizontal arms)
-- [ ] App icon redesign to match marigold identity (currently uses Electron default)
+Core flashing works. These items make it reliable for real users.
 
-### Demo Mode (INAV-style)
-- [ ] "Demo" button on the Connect page (like INAV Configurator)
-- [ ] Embedded realistic parameter set (export from real aircraft via backup system)
-- [ ] Fake connection handler that populates stores and sets status to 'connected'
-- [ ] All pages browsable with static but realistic data
-- [ ] Writes go to dirty params as usual but never flush to hardware
-- [ ] Telemetry values static (no live RC, attitude, etc.)
-- [ ] Clear "DEMO MODE" indicator in header/footer so user knows it's not real
-- [ ] Useful for: README screenshots, GitHub visitors, trying the UI without hardware
+- [x] **BDShot firmware variants** -- BDShot builds hidden from board list, checkbox
+      toggle in firmware details panel with explanation.
+- [ ] **Test connected flash path** -- verify the MAVLink reboot-to-bootloader path
+      works end-to-end when FC is connected in ArduGUI.
+- [x] **First-time flash warning** -- blue info box when flashing disconnected, explains
+      ArduPilot bootloader requirement and DFU fallback.
+- [x] **Flash error recovery guidance** -- contextual help when flash fails mid-program,
+      explains board is safe in bootloader mode.
 
 ---
 
-## V2 -- Post-Wizard Enhancements
+## V1 -- Wizard & Calibration
 
-Features that are valuable but not required for the core "zero to flyable" flow.
+### Wizard (15/15 steps functional)
 
-### Firmware Flashing
-- [ ] Board detection via USB VID/PID and bootloader
-- [ ] Download firmware from firmware.ardupilot.org
-- [ ] Flash ArduCopter / ArduPlane / ArduRover
-- [ ] Firmware version selection (stable / beta / dev)
-- [ ] Progress tracking during flash
-- [ ] Requires internet connection -- clear messaging about this
-- [ ] (Complex: DFU mode, STM32 bootloader protocols, board-specific quirks)
+- [x] Frame selection
+- [x] Output Mapping (board-aware, writes to FC immediately)
+- [x] Motors & ESC (battery gating, DShot, position labels)
+- [x] Control Surfaces (3D viewer, live servo feedback)
+- [x] Tilt Servos (quadplane, active mode-switch tilt test)
+- [x] Transitions (quadplane, Q_TRANSITION_MS, Q_RTL_MODE, Q_ASSIST)
+- [x] Receiver (protocol, port, RC visualization)
+- [x] RC Calibration (mandatory, 2-phase, throttle reversal detection)
+- [x] GPS (auto-detect, live telemetry, constellation config)
+- [x] Compass (coverage ring visualization)
+- [x] Accelerometer (6-position with 3D viewer)
+- [x] Flight Modes (6-slot, recommended defaults)
+- [x] Failsafes (RC/battery/GCS with recommended defaults)
+- [x] Initial Tune (prop noise profiles, AutoTune assignment)
+- [x] Review & Apply (grouped diff, write to FC, reboot)
 
-### Connectivity
-- [ ] TCP connection (for SITL -- useful for dev/testing)
-- [ ] UDP connection (for MAVProxy / telemetry bridges)
-- [ ] WiFi connections to telemetry-equipped FCs
-- [ ] Bluetooth serial (some FCs support this)
-- [ ] Multi-vehicle support (probably never, but noting it)
+### Calibration Gaps
 
-### Telemetry & Monitoring
-- [ ] Real-time telemetry dashboard (attitude, altitude, speed)
-- [ ] PID tuning with live graphing (oscillation detection)
-- [ ] Blackbox / dataflash log viewer
-- [ ] In-flight HUD overlay
+- [x] **RC calibration** -- 2-phase flow in wizard + standalone CalibrationPage
+- [~] **Compass calibration** -- functional but clunky UX
+  - [ ] 3D sphere visualization (nice-to-have for V1, not blocking)
 
-### UI / Polish
-- [ ] Light theme (after iconography and design are finalized)
-- [ ] App icon (needed for proper packaging -- currently uses Electron default)
-- [ ] Screenshot gallery for README
-- [ ] Localization / i18n (probably V3)
+### INAV Import Gaps
 
-### Mission Planning
-- [ ] Waypoint editor with map
-- [ ] Rally points
-- [ ] Geofence drawing
-- [ ] (ArduDeck and QGC already do this well -- low priority for ArduGUI)
+- [x] Board alignment (align_board_roll/pitch decidegrees -> AHRS_TRIM_X/Y radians)
+- [~] OSD import -- fixed screen number prefix (OSD1_ not OSD_), added OSD_TYPE=1
+      and OSD1_ENABLE=1. Needs hardware verification with actual OSD display.
+- [x] RC expo/rates -- skip with explanatory note (no direct equivalent)
 
 ---
 
-## Bug Fixes / Known Issues
+## V1 -- VTOL Configuration (The Differentiator)
 
-Track these separately. File as GitHub Issues when found.
+VTOL is where ArduPilot is powerful but configuration is painful. ArduGUI should
+make this dramatically easier than Mission Planner.
 
-- [ ] Frame "Active" badge needs testing across all preset types
-- [ ] Compass calibration UX is clunky (covered above in 3D sphere plan)
-- [ ] Some board definitions may have incorrect port labels
-- [ ] QuadPlane transitions page is a placeholder
-- [ ] Backups page UI polish
-  - [ ] Confirm before deleting snapshots
-  - [ ] Better empty state when no aircraft history yet
-  - [ ] Show snapshot count badge on sidebar Backups icon
-  - [ ] Handle DB errors gracefully in UI (toast or inline message)
-- [ ] Frame page wiring diagram improvements
-  - [ ] Use correct plane silhouette per frame type (currently shows conventional for all)
-  - [ ] Better label positioning to avoid overlapping dots and text
-  - [ ] Show tail surface labels closer to tail area, not overlapping fuselage
-  - [ ] Scale diagram to accommodate different frame complexities
+The wizard handles:
+- [x] VTOL frame detection from INAV import
+- [x] Tilt servo configuration step with active mode-switch test
+- [x] Q_ parameter lifecycle (Q_ENABLE, Q_FRAME_CLASS, Q_M_PWM_TYPE)
+- [x] ArduPlane welcome: "Airplane or VTOL?" choice
+- [x] Transitions step: Q_TRANSITION_MS, Q_RTL_MODE, Q_ASSIST_SPEED/ALT
+
+Still needed:
+- [x] **Standalone Transitions page** -- full version with all params
+- [x] **VTOL-specific pre-flight checks** -- paramValidation.ts checkVtol()
+- [ ] **VTOL-specific pre-flight: live checks** -- tilt servos responding,
+      motor test in both modes (hover + forward flight)
 
 ---
 
-## Design Principles (for all features)
+## V1 -- UX Polish (Ship Quality)
 
-1. **Guided, not exhaustive.** Curated workflows, not flat parameter dumps.
-2. **Safe by default.** Validate everything, warn about dangerous settings.
-3. **Verify externally.** Always remind users to check in Mission Planner.
-4. **One icon set.** AirframeIcons shapes everywhere -- consistency matters.
-5. **Effective values.** Always read dirtyParams first, then FC params.
-6. **No em dashes.** Use " -- " or rewrite the sentence.
+- [x] **Replace system file dialogs** -- ConfirmDialog component + useConfirm hook,
+      all 4 window.confirm calls replaced (CalibrationPage x2, FrameWizard, Layout).
+- [x] **Airplane motor spinning indicator** -- PlaneServoOverlay shows pulsing animation.
+- [x] **Plane servo/motor label overlap** -- motor labels repositioned to right edge.
+- [x] **"What changed" diff** -- ReviewStep shows writtenParams vs initialSnapshot.
+- [x] **BDShot firmware toggle** -- checkbox in firmware details, BDShot variants hidden from list.
+- [x] **Flash error recovery** -- contextual help when flash fails mid-program.
+- [x] **Motor diagram consistency** -- wizard and standalone now match (colored rings, CW/CCW labels).
+- [x] **GPS standalone page** -- live telemetry, constellation toggles.
+- [x] **Control Surfaces standalone page** -- 3D viewer, servo bars, reverse buttons.
+- [x] **Write-as-you-go wizard** -- params written on Next, snapshot rollback on abandon.
+- [x] **All steps skippable** -- safety warnings on ReviewStep with acknowledgment checkbox.
+- [x] **Board detection dialog** -- resume / start fresh / start from beginning.
+
+---
+
+## V1 -- Infrastructure
+
+- [x] MAVFTP parameter download (~300ms)
+- [x] Firmware flashing (manifest, APJ zlib, bootloader protocol, scan-all-ports)
+- [x] Factory reset before wizard (backup -> reset -> reboot -> reconnect)
+- [x] Serial port auto-detection (1.5s polling, auto-select)
+- [x] Electron IPC net:fetch
+- [x] Parameter backup/restore (SQLite, multi-aircraft, diff, export)
+- [x] 414-board database from ArduPilot hwdef
+- [x] 174-board INAV timer-to-pad mapping
+- [x] Pre-flight readiness dashboard
+- [x] Wiring guide page
+- [x] Parameter validation engine
+- [x] Flight mode switching (MAV_CMD_DO_SET_MODE, flightMode in vehicleStore)
+
+---
+
+## V1.5 -- Post-First-Flight (After V1 Release)
+
+These help users after their test flight, not before.
+
+- [x] **Initial Tune wizard step** -- prop noise profiles, filter suggestions,
+      AutoTune preparation. Already implemented (456 lines).
+- [ ] **Post-flight tuning guide** -- notch filter setup from .bin log analysis,
+      per-axis autotune sequence, magfit calibration
+- [ ] **Vehicle profile persistence** -- component metadata (motor KV, prop size,
+      frame weight, ESC type, battery specs) alongside backups
+- [ ] **Notch filter webtool integration** -- parse .bin logs, suggest INS_HNTCH_ params
+- [x] **Battery monitor setup page** -- voltage divider cal, current sensor, cell count,
+      failsafe actions, live telemetry. BatteryPage.tsx fully wired.
+- [x] **ESC configuration page** -- protocol selection, BLHeli passthrough,
+      DShot direction reversal bitmask, spin thresholds. EscPage.tsx fully wired.
+- [ ] **Change reason tracking** -- tag each param with why it was set
+- [ ] **IMU temperature calibration** -- reduces "accel inconsistent" arm errors
+
+---
+
+## V2 -- Future
+
+- [ ] TCP/UDP connections (SITL, MAVProxy)
+- [ ] WiFi / Bluetooth connections
+- [ ] Demo mode (for screenshots, README, trade shows)
+- [ ] Light theme
+- [ ] Localization / i18n
+- [ ] App icon redesign
+- [ ] Compass 3D sphere visualization
+- [ ] GPS page with live map
+- [ ] Magnetometer alignment page
+- [ ] Arming checks bitmask editor
+- [ ] OSD profile save/load and bundled presets
+- [ ] Export/import .param file sequences (MC compatibility)
+- [ ] Board diagram images (per-board SVG showing physical layout)
+- [ ] Migrate boardRegistry.ts to boardData.ts
+- [ ] INAV cross-reference scraper for pad label verification
+- [ ] H-frame icon, Y6 icon, motor overlay CW/CCW arc fixes
+
+---
+
+## Design Principles
+
+1. **Zero to test flight.** Every feature serves the path from unboxing to flying.
+2. **Guided, not exhaustive.** Curated workflows, not flat parameter dumps.
+3. **Safe by default.** Validate everything, warn about dangerous settings.
+4. **Import is source of truth.** When user provides a config, trust it over defaults.
+5. **VTOL made easy.** This is the differentiator. QuadPlane config should be painless.
+6. **Outdoor first.** High contrast, readability, utilitarian design. No decorative elements.
+7. **Surface errors in UI.** No DevTools access -- never rely on console.log.
+8. **No em dashes.** Use " -- " or rewrite the sentence.
+9. **Debate before coding.** Discuss tradeoffs BEFORE writing any code.

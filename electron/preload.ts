@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('serial:open', path, baudRate),
     close: () => ipcRenderer.invoke('serial:close'),
     write: (data: Uint8Array) => ipcRenderer.invoke('serial:write', data),
+    setBaudRate: (baudRate: number) => ipcRenderer.invoke('serial:set-baud', baudRate),
     onData: (callback: (data: Uint8Array) => void) => {
       const handler = (_event: unknown, data: Uint8Array) => callback(data);
       ipcRenderer.on('serial:data', handler);
@@ -24,6 +25,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('serial:close', handler);
       return () => ipcRenderer.removeListener('serial:close', handler);
     },
+    // Port watcher -- auto-detect USB plug/unplug
+    startPortWatch: () => ipcRenderer.invoke('serial:start-port-watch'),
+    stopPortWatch: () => ipcRenderer.invoke('serial:stop-port-watch'),
+    onPortsChanged: (callback: (ports: { path: string; manufacturer?: string; serialNumber?: string; vendorId?: string; productId?: string; pnpId?: string }[]) => void) => {
+      const handler = (_event: unknown, ports: { path: string; manufacturer?: string; serialNumber?: string; vendorId?: string; productId?: string; pnpId?: string }[]) => callback(ports);
+      ipcRenderer.on('serial:ports-changed', handler);
+      return () => ipcRenderer.removeListener('serial:ports-changed', handler);
+    },
   },
 
   // File system operations
@@ -36,6 +45,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // DevTools
   toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
+
+  // Network -- fetch URLs from main process (renderer may be restricted)
+  net: {
+    fetch: (url: string) => ipcRenderer.invoke('net:fetch', url),
+  },
 
   // Parameter database
   db: {

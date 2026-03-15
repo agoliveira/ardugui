@@ -18,6 +18,9 @@ export interface SerialManagerEvents {
 export class SerialManager {
   private port: SerialPort | null = null;
   private events: SerialManagerEvents | null = null;
+  private watchInterval: ReturnType<typeof setInterval> | null = null;
+  private lastPortPaths: string[] = [];
+  private portWatchCallback: ((ports: PortInfo[]) => void) | null = null;
 
   async listPorts(): Promise<PortInfo[]> {
     const ports = await SerialPort.list();
@@ -42,6 +45,48 @@ export class SerialManager {
         vendorId: p.vendorId,
         productId: p.productId,
       }));
+  }
+
+  /**
+   * Start polling for port changes. Calls onChanged whenever the port list
+   * changes (new port plugged in or existing port removed).
+   * Polling interval: 1.5 seconds.
+   */
+  startPortWatch(onChanged: (ports: PortInfo[]) => void): void {
+    this.stopPortWatch();
+    this.portWatchCallback = onChanged;
+
+    // Initial snapshot
+    this.listPorts().then((ports) => {
+      this.lastPortPaths = ports.map((p) => p.path).sort();
+      onChanged(ports);
+    });
+
+    this.watchInterval = setInterval(async () => {
+      try {
+        const ports = await this.listPorts();
+        const currentPaths = ports.map((p) => p.path).sort();
+        const changed =
+          currentPaths.length !== this.lastPortPaths.length ||
+          currentPaths.some((p, i) => p !== this.lastPortPaths[i]);
+        if (changed) {
+          this.lastPortPaths = currentPaths;
+          this.portWatchCallback?.(ports);
+        }
+      } catch {
+        // Ignore transient list errors
+      }
+    }, 1500);
+  }
+
+  /** Stop polling for port changes. */
+  stopPortWatch(): void {
+    if (this.watchInterval) {
+      clearInterval(this.watchInterval);
+      this.watchInterval = null;
+    }
+    this.portWatchCallback = null;
+    this.lastPortPaths = [];
   }
 
   async open(
@@ -92,19 +137,28 @@ export class SerialManager {
   async close(): Promise<void> {
     if (!this.port) return;
 
+    const port = this.port;
+    this.port = null;
+    this.events = null;
+
+    // Remove all listeners to prevent callbacks after close
+    port.removeAllListeners();
+
     return new Promise((resolve) => {
-      if (!this.port || !this.port.isOpen) {
-        this.port = null;
+      if (!port.isOpen) {
+        // Port already closed (USB disconnect) -- force destroy to release OS lock
+        try { port.destroy(); } catch { /* ignore */ }
         resolve();
         return;
       }
 
-      this.port.close((err) => {
+      port.close((err) => {
         if (err) {
           console.warn('Error closing serial port:', err.message);
+          // Force destroy if graceful close fails
+          try { port.destroy(); } catch { /* ignore */ }
         }
         console.log('Serial port closed');
-        this.port = null;
         resolve();
       });
     });
@@ -112,7 +166,7 @@ export class SerialManager {
 
   async write(data: Uint8Array): Promise<void> {
     if (!this.port || !this.port.isOpen) {
-      throw new Error('Port not open');
+      return; // Silently drop -- renderer handles reconnection
     }
 
     return new Promise((resolve, reject) => {
@@ -134,5 +188,21 @@ export class SerialManager {
 
   get isOpen(): boolean {
     return this.port !== null && this.port.isOpen;
+  }
+
+  /**
+   * Change baud rate on an open port without closing/reopening.
+   * Uses SerialPort's update() method.
+   */
+  async setBaudRate(baudRate: number): Promise<void> {
+    if (!this.port || !this.port.isOpen) {
+      throw new Error('Port is not open');
+    }
+    return new Promise((resolve, reject) => {
+      this.port!.update({ baudRate }, (err) => {
+        if (err) reject(new Error(`Failed to set baud rate: ${err.message}`));
+        else resolve();
+      });
+    });
   }
 }
