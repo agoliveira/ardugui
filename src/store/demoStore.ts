@@ -20,6 +20,7 @@ import { useConnectionStore } from './connectionStore';
 import { useVehicleStore } from './vehicleStore';
 import { useParameterStore, type ParameterEntry } from './parameterStore';
 import { useTelemetryStore } from './telemetryStore';
+import { connectionManager } from '@/mavlink/connection';
 
 interface DemoState {
   active: boolean;
@@ -29,6 +30,48 @@ interface DemoState {
 
 const STORAGE_KEY = 'ardugui-demo';
 
+/* ------------------------------------------------------------------ */
+/*  ConnectionManager interception                                     */
+/*                                                                     */
+/*  In demo mode, outbound MAVLink calls need to be no-ops. We save   */
+/*  the original methods and replace them with stubs that return       */
+/*  immediately. Restored when demo stops.                             */
+/* ------------------------------------------------------------------ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const savedMethods: Record<string, any> = {};
+
+function interceptConnectionManager() {
+  const noopAsync = async () => {};
+  const noopResult = async () => ({ success: false, error: 'Demo mode' });
+
+  const methods = [
+    'writeParam', 'requestParamRefresh', 'requestPreArmCheck',
+    'requestDataStream', 'motorTest', 'rebootFlightController',
+    'startAccelCalibration', 'confirmAccelCalPosition',
+    'startCompassCalibration', 'cancelCompassCalibration',
+    'calibrateLevel', 'resetToDefaults', 'connect', 'disconnect',
+  ];
+
+  for (const name of methods) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mgr = connectionManager as any;
+    if (typeof mgr[name] === 'function') {
+      savedMethods[name] = mgr[name].bind(mgr);
+      mgr[name] = name === 'writeParam' ? noopResult : noopAsync;
+    }
+  }
+}
+
+function restoreConnectionManager() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mgr = connectionManager as any;
+  for (const [name, fn] of Object.entries(savedMethods)) {
+    mgr[name] = fn;
+  }
+  Object.keys(savedMethods).forEach((k) => delete savedMethods[k]);
+}
+
 export const useDemoStore = create<DemoState>((set, get) => ({
   active: false,
 
@@ -36,6 +79,7 @@ export const useDemoStore = create<DemoState>((set, get) => ({
     if (get().active) return;
     set({ active: true });
     try { localStorage.setItem(STORAGE_KEY, '1'); } catch { /* ignore */ }
+    interceptConnectionManager();
     populateDemoData();
     startTelemetrySimulation();
   },
@@ -44,6 +88,7 @@ export const useDemoStore = create<DemoState>((set, get) => ({
     set({ active: false });
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     stopTelemetrySimulation();
+    restoreConnectionManager();
     clearDemoData();
   },
 }));
