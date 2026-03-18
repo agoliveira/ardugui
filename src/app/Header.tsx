@@ -1,8 +1,10 @@
-import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench } from 'lucide-react';
+import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench, Sun, Moon, MonitorPlay } from 'lucide-react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
 import { useDebugStore } from '@/store/debugStore';
+import { useThemeStore } from '@/store/themeStore';
+import { useDemoStore } from '@/store/demoStore';
 import { connectionManager } from '@/mavlink/connection';
 import { HealthBar } from '@/components/HealthBar';
 
@@ -16,17 +18,27 @@ export function Header() {
   const battery = useTelemetryStore((s) => s.battery);
   const debugEnabled = useDebugStore((s) => s.enabled);
   const toggleDebug = useDebugStore((s) => s.toggle);
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggle);
+  const demoActive = useDemoStore((s) => s.active);
+  const startDemo = useDemoStore((s) => s.start);
+  const stopDemo = useDemoStore((s) => s.stop);
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting' || status === 'identifying' || status === 'loading';
 
-  const handleDisconnect = async () => { await connectionManager.disconnect(); };
+  const handleDisconnect = async () => {
+    if (demoActive) { stopDemo(); return; }
+    await connectionManager.disconnect();
+  };
 
   return (
     <header className="flex h-10 items-center border-b border-border bg-surface-0 px-3 gap-2 text-[12px]">
       {/* Left: connection */}
       <div className="flex items-center gap-2">
-        {isConnected ? (
+        {demoActive ? (
+          <MonitorPlay size={14} className="text-accent" />
+        ) : isConnected ? (
           <Wifi size={14} className="text-success" />
         ) : isConnecting ? (
           <Loader2 size={14} className="animate-spin text-accent" />
@@ -34,7 +46,7 @@ export function Header() {
           <WifiOff size={14} className="text-subtle" />
         )}
         <span className="font-medium text-muted">
-          {isConnected ? portPath : isConnecting ? 'Connecting...' : 'Disconnected'}
+          {demoActive ? 'Demo Mode' : isConnected ? portPath : isConnecting ? 'Connecting...' : 'Disconnected'}
         </span>
 
         {(isConnected || isConnecting) && (
@@ -108,6 +120,29 @@ export function Header() {
               <Wrench size={13} />
             </button>
           </>
+        )}
+
+        <div className="h-4 w-px bg-border" />
+        <button onClick={toggleTheme}
+          className="flex h-6 items-center gap-1 rounded px-2 text-[11px] font-bold text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+          {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+        </button>
+
+        {!isConnected && !demoActive && (
+          <button onClick={startDemo}
+            className="flex h-6 items-center gap-1 rounded px-2 text-[11px] font-bold text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
+            title="Start demo mode (simulated flight controller)">
+            <MonitorPlay size={13} />
+          </button>
+        )}
+        {demoActive && (
+          <button onClick={stopDemo}
+            className="flex h-6 items-center gap-1 rounded px-2 text-[11px] font-bold bg-accent/15 text-accent transition-colors"
+            title="Stop demo mode">
+            <MonitorPlay size={13} />
+            <span>DEMO</span>
+          </button>
         )}
       </div>
     </header>

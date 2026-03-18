@@ -63,6 +63,61 @@
 }
 
 @layer base {
+
+  /* ── Light theme overrides ────────────────────────────────────────── */
+  [data-theme="light"] {
+    --color-background: #f5f2ee;
+    --color-surface-0: #ebe7e2;
+    --color-surface-1: #ffffff;
+    --color-surface-2: #f0ece8;
+    --color-surface-3: #e5e0da;
+
+    --color-foreground: #1a1816;
+    --color-muted: #5c554d;
+    --color-subtle: #8a837b;
+
+    --color-border: #d5cfc8;
+    --color-border-hover: #bfb8b0;
+
+    --color-accent: #d48a00;
+    --color-accent-hover: #b87600;
+    --color-accent-muted: #fff3e0;
+    --color-accent-glow: rgba(212, 138, 0, 0.15);
+
+    --color-secondary: #0284c7;
+    --color-secondary-muted: #e0f2fe;
+
+    --color-success: #16a34a;
+    --color-success-muted: #dcfce7;
+    --color-warning: #d97706;
+    --color-warning-muted: #fef3c7;
+    --color-danger: #e11d48;
+    --color-danger-muted: #ffe4e6;
+    --color-info: #0284c7;
+
+    --color-armed: #e11d48;
+    --color-disarmed: #16a34a;
+
+    --color-sidebar: #ebe7e2;
+    --color-sidebar-active: #ffffff;
+    --color-sidebar-hover: #f0ece8;
+  }
+
+  [data-theme="light"] * {
+    scrollbar-color: var(--color-surface-3) transparent;
+  }
+
+  [data-theme="light"] ::selection {
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  [data-theme="light"] select option {
+    background: var(--color-surface-1);
+    color: var(--color-foreground);
+  }
+
+  /* ── Base styles ──────────────────────────────────────────────────── */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-surface-3) transparent;
@@ -224,6 +279,29 @@
 
   .table-row-even { background: var(--color-surface-0); }
   .table-row-odd  { background: var(--color-surface-1); }
+
+  /* -- Info/warning boxes -- light-theme-aware */
+  [data-theme="light"] .bg-blue-900\/20,
+  [data-theme="light"] .bg-blue-900\/15 {
+    background: #dbeafe !important;
+  }
+  [data-theme="light"] .text-blue-300\/90,
+  [data-theme="light"] .text-blue-300,
+  [data-theme="light"] .text-blue-200\/80 {
+    color: #1e40af !important;
+  }
+  [data-theme="light"] .text-blue-400 {
+    color: #2563eb !important;
+  }
+  [data-theme="light"] .border-blue-500\/30 {
+    border-color: #93c5fd !important;
+  }
+  [data-theme="light"] .bg-red-500\/10 {
+    background: #fee2e2 !important;
+  }
+  [data-theme="light"] .text-red-400 {
+    color: #dc2626 !important;
+  }
 }
 
 /* -- Calibration position animations */
