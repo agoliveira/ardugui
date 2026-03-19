@@ -203,16 +203,25 @@ export function Layout() {
     return () => { unsub(); unsubParams(); };
   }, []);
 
-  // Expose dirty-param count to the Electron main process for window-close guard.
+  // Expose app state to the Electron main process for window-close guard.
+  // Returns an object with dirty count, connection state, and wizard state.
   // Also keep beforeunload as a fallback for browser environments.
   useEffect(() => {
-    // Callable from main process via executeJavaScript
-    (window as unknown as Record<string, unknown>).__getArduGUIDirtyCount = () =>
-      useParameterStore.getState().dirtyParams.size;
+    (window as unknown as Record<string, unknown>).__getArduGUIDirtyCount = () => {
+      const dirty = useParameterStore.getState().dirtyParams.size;
+      const connected = useConnectionStore.getState().status === 'connected';
+      const wizardActive = useWizardStore.getState().active;
+      // Return a number for backward compat: dirty count, or -1 if connected/wizard
+      if (dirty > 0) return dirty;
+      if (wizardActive) return -2;
+      if (connected) return -1;
+      return 0;
+    };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const dirtyCount = useParameterStore.getState().dirtyParams.size;
-      if (dirtyCount > 0) {
+      const connected = useConnectionStore.getState().status === 'connected';
+      if (dirtyCount > 0 || connected) {
         e.preventDefault();
         e.returnValue = '';
       }

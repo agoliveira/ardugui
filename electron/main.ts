@@ -45,16 +45,27 @@ function createWindow() {
       .executeJavaScript(
         'window.__getArduGUIDirtyCount ? window.__getArduGUIDirtyCount() : 0'
       )
-      .then((dirtyCount: number) => {
-        if (dirtyCount > 0) {
+      .then((stateCode: number) => {
+        if (stateCode !== 0) {
+          let message: string;
+          let detail: string;
+          if (stateCode > 0) {
+            message = `You have ${stateCode} unsaved parameter change${stateCode > 1 ? 's' : ''}.`;
+            detail = 'If you close now, your changes will be lost. Save to FC first, or discard and close.';
+          } else if (stateCode === -2) {
+            message = 'The Setup Wizard is still running.';
+            detail = 'Closing now will abandon the wizard. Any parameters already written to the FC will remain.';
+          } else {
+            message = 'A flight controller is connected.';
+            detail = 'Closing will disconnect from the FC. Any unsaved changes in the UI will be lost.';
+          }
           const choice = dialog.showMessageBoxSync(mainWindow!, {
             type: 'question',
-            buttons: ['Discard Changes', 'Cancel'],
+            buttons: ['Close', 'Cancel'],
             defaultId: 1,
-            title: 'Unsaved Changes',
-            message: `You have ${dirtyCount} unsaved parameter change${dirtyCount > 1 ? 's' : ''}.`,
-            detail:
-              'If you close now, your changes will be lost. Save to FC first, or discard and close.',
+            title: 'Close ArduGUI?',
+            message,
+            detail,
           });
           if (choice === 0) {
             // Use destroy() to bypass the renderer's beforeunload handler,

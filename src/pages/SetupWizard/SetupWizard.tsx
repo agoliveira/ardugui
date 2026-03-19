@@ -15,6 +15,7 @@ import { X, Wand2, Unplug, RefreshCw, Rocket, Upload, Plane, ArrowLeft, AlertTri
 import { useWizardStore } from './wizardStore';
 import { WizardStepper } from './WizardStepper';
 import { WizardNav } from './WizardNav';
+import { StepHelp } from '@/components/HelpTip';
 import { PlaceholderStep } from './steps/PlaceholderStep';
 import { FrameStep } from './steps/FrameStep';
 import { MotorEscStep } from './steps/MotorEscStep';
@@ -411,6 +412,9 @@ export function SetupWizard() {
           ) : (
             <>
               <div className="flex-1 overflow-y-auto p-6">
+                <div className="mb-4">
+                  <StepHelp stepId={currentStep.id} />
+                </div>
                 {renderStep(currentStep.id, handleCanAdvanceChange)}
               </div>
 
