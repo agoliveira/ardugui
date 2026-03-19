@@ -51,9 +51,7 @@ const ALL_STEPS: WizardStep[] = [
 
   // -- Phase: Sensors --
   { id: 'receiver',         label: 'Receiver',          phase: 'Sensors',         appliesTo: [], skippable: true,
-    safetyCritical: true, skipWarning: 'Receiver not configured. You will not have control of the aircraft.' },
-  { id: 'rc_calibration',   label: 'RC Calibration',    phase: 'Sensors',         appliesTo: [], skippable: true,
-    safetyCritical: true, skipWarning: 'RC endpoints at factory defaults. Control response may be unpredictable.' },
+    safetyCritical: true, skipWarning: 'Receiver not configured and RC endpoints not calibrated. Control response may be unpredictable.' },
   { id: 'gps',              label: 'GPS',               phase: 'Sensors',         appliesTo: [], skippable: true },
   { id: 'compass',          label: 'Compass',           phase: 'Sensors',         appliesTo: [], skippable: true,
     safetyCritical: true, skipWarning: 'Compass not calibrated. GPS-assisted modes (Loiter, RTL, Auto) will not work reliably.' },

@@ -28,6 +28,7 @@ import { useWizardStore } from '../wizardStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { useParameterStore } from '@/store/parameterStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
+import { connectionManager } from '@/mavlink/connection';
 import { getBoardById, type BoardDef, type BoardUartPort } from '@/models/boardRegistry';
 
 /* ------------------------------------------------------------------ */
@@ -430,6 +431,96 @@ export function ReceiverStep({ onCanAdvanceChange }: ReceiverStepProps) {
     userModified &&
     (portChanged || (selectedProtocol?.needsSerial && liveRcinPort === null));
 
+  // ── RC Calibration (inline) ─────────────────────────────────────────
+
+  type CalPhase = 'idle' | 'capturing' | 'centering' | 'saving' | 'done';
+  const [calPhase, setCalPhase] = useState<CalPhase>('idle');
+  const [calError, setCalError] = useState<string | null>(null);
+  const capturedMins = useRef<number[]>([]);
+  const capturedMaxs = useRef<number[]>([]);
+  const [, forceCalUpdate] = useState(0);
+
+  const alreadyCalibrated = useMemo(() => {
+    const rc1Min = parameters.get('RC1_MIN')?.value ?? 1100;
+    const rc1Max = parameters.get('RC1_MAX')?.value ?? 1900;
+    return rc1Min !== 1100 || rc1Max !== 1900;
+  }, [parameters]);
+
+  const throttleChan = useMemo(() => {
+    const mapped = parameters.get('RCMAP_THROTTLE')?.value;
+    return mapped ? mapped - 1 : 2; // 0-based, default ch3
+  }, [parameters]);
+
+  const startCalibration = useCallback(() => {
+    capturedMins.current = new Array(rcChancount).fill(99999);
+    capturedMaxs.current = new Array(rcChancount).fill(0);
+    setCalError(null);
+    setCalPhase('capturing');
+  }, [rcChancount]);
+
+  const resetCapture = useCallback(() => {
+    capturedMins.current = new Array(rcChancount).fill(99999);
+    capturedMaxs.current = new Array(rcChancount).fill(0);
+    forceCalUpdate((n) => n + 1);
+  }, [rcChancount]);
+
+  // Live min/max tracking during capture
+  useEffect(() => {
+    if (calPhase !== 'capturing') return;
+    if (!hasChannels) return;
+    for (let i = 0; i < rcChancount; i++) {
+      const v = rcChannels[i];
+      if (v <= 0 || v >= 65535) continue;
+      if (v < capturedMins.current[i]) capturedMins.current[i] = v;
+      if (v > capturedMaxs.current[i]) capturedMaxs.current[i] = v;
+    }
+    forceCalUpdate((n) => n + 1);
+  }, [calPhase, rcChannels, rcChancount, hasChannels]);
+
+  const capturedRanges = useMemo(() => {
+    return capturedMins.current.map((mn, i) => {
+      const mx = capturedMaxs.current[i] ?? 0;
+      return mx > mn && mn < 99999 ? mx - mn : 0;
+    });
+  // forceCalUpdate triggers recalc
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceCalUpdate]);
+
+  const sticksGood = capturedRanges.filter((r) => r >= 300).length >= 4;
+
+  const throttleReversed = useMemo(() => {
+    if (calPhase !== 'centering') return false;
+    const tMin = capturedMins.current[throttleChan] ?? 99999;
+    const tMax = capturedMaxs.current[throttleChan] ?? 0;
+    if (tMax <= tMin) return false;
+    const tCur = rcChannels[throttleChan] ?? 1500;
+    return tCur > (tMin + tMax) / 2;
+  }, [calPhase, rcChannels, throttleChan]);
+
+  const saveCalibration = useCallback(async () => {
+    setCalPhase('saving');
+    setCalError(null);
+    try {
+      for (let i = 0; i < rcChancount; i++) {
+        const mn = capturedMins.current[i] < 99999 ? capturedMins.current[i] : 1000;
+        const mx = capturedMaxs.current[i] > 0 ? capturedMaxs.current[i] : 2000;
+        const trim = i === throttleChan ? mn : rcChannels[i];
+        const chNum = i + 1;
+        const okMin = await connectionManager.writeParam(`RC${chNum}_MIN`, mn);
+        const okMax = await connectionManager.writeParam(`RC${chNum}_MAX`, mx);
+        const okTrim = await connectionManager.writeParam(`RC${chNum}_TRIM`, trim);
+        if (!okMin || !okMax || !okTrim) {
+          throw new Error(`Failed to write RC${chNum} calibration`);
+        }
+      }
+      setCalPhase('done');
+      markComplete('receiver');
+    } catch (err) {
+      setCalError(String(err));
+      setCalPhase('centering');
+    }
+  }, [rcChancount, rcChannels, throttleChan, markComplete]);
+
   // ── Advance gate ───────────────────────────────────────────────────
 
   useEffect(() => {
@@ -704,7 +795,7 @@ export function ReceiverStep({ onCanAdvanceChange }: ReceiverStepProps) {
         </div>
       )}
 
-      {/* ── LIVE RC CHANNEL BARS ── */}
+      {/* ── LIVE RC CHANNEL BARS + INLINE CALIBRATION ── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted">
@@ -736,6 +827,9 @@ export function ReceiverStep({ onCanAdvanceChange }: ReceiverStepProps) {
             chancount={rcChancount}
             labels={channelLabels}
             throttleChannel={selectedMap.throttle}
+            calPhase={calPhase}
+            capturedMins={capturedMins.current}
+            capturedMaxs={capturedMaxs.current}
           />
         ) : (
           <div className="rounded border border-border bg-surface-1 px-4 py-8 text-center">
@@ -749,6 +843,119 @@ export function ReceiverStep({ onCanAdvanceChange }: ReceiverStepProps) {
                 A reboot may be required after changing the serial port configuration.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Calibration controls */}
+        {receiverLive && calPhase === 'idle' && !alreadyCalibrated && (
+          <button onClick={startCalibration} className="btn btn-primary h-9 w-full gap-2 text-sm">
+            <Radio size={14} /> Calibrate Endpoints
+          </button>
+        )}
+
+        {receiverLive && calPhase === 'idle' && alreadyCalibrated && (
+          <div className="flex items-center gap-3">
+            <div className="flex flex-1 items-center gap-2 rounded border border-success/30 bg-success/5 px-3 py-2">
+              <Check size={14} className="shrink-0 text-success" />
+              <span className="text-sm text-success">RC endpoints calibrated</span>
+            </div>
+            <button onClick={startCalibration} className="btn btn-ghost h-9 px-4 text-xs">
+              Recalibrate
+            </button>
+          </div>
+        )}
+
+        {calPhase === 'done' && (
+          <div className="flex items-center gap-3">
+            <div className="flex flex-1 items-center gap-2 rounded border border-success/30 bg-success/5 px-3 py-2">
+              <ShieldCheck size={14} className="shrink-0 text-success" />
+              <span className="text-sm text-success">Calibration saved to FC</span>
+            </div>
+            <button onClick={startCalibration} className="btn btn-ghost h-9 px-4 text-xs">
+              Recalibrate
+            </button>
+          </div>
+        )}
+
+        {calPhase === 'capturing' && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-2 rounded border border-accent/40 bg-accent/5 px-4 py-3">
+              <Info size={14} className="mt-0.5 shrink-0 text-accent" />
+              <div className="text-sm text-accent">
+                <span className="font-bold">Move all sticks and switches to their extremes.</span>
+                <span className="ml-1 text-accent/80">
+                  The orange markers on each bar show the captured range expanding.
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={resetCapture} className="btn btn-ghost h-9 px-4 text-xs">
+                <RotateCw size={12} /> Reset
+              </button>
+              <button
+                onClick={() => setCalPhase('centering')}
+                disabled={!sticksGood}
+                className="btn btn-primary h-9 flex-1 gap-2 text-sm"
+              >
+                {sticksGood
+                  ? 'Next: Center Sticks'
+                  : `Move sticks (${capturedRanges.filter((r) => r >= 300).length}/4 captured)`}
+              </button>
+              <button onClick={() => setCalPhase('idle')} className="btn btn-ghost h-9 px-4 text-xs">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {calPhase === 'centering' && (
+          <div className="space-y-3">
+            {throttleReversed && (
+              <div className="flex items-start gap-2 rounded border border-danger/40 bg-danger/5 px-4 py-3">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-danger" />
+                <div className="text-sm text-danger">
+                  <span className="font-bold">Throttle appears reversed.</span>
+                  <span className="ml-1 text-danger/80">
+                    "Throttle low" position is near the maximum. Fix this in your transmitter
+                    settings before saving.
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="flex items-start gap-2 rounded border border-accent/40 bg-accent/5 px-4 py-3">
+              <Info size={14} className="mt-0.5 shrink-0 text-accent" />
+              <div className="text-sm text-accent">
+                <span className="font-bold">Center all sticks. Throttle to low position.</span>
+                <span className="ml-1 text-accent/80">
+                  This sets the trim points.
+                </span>
+              </div>
+            </div>
+            {calError && (
+              <div className="flex items-start gap-2 rounded border border-danger/40 bg-danger/5 px-3 py-2">
+                <AlertTriangle size={12} className="mt-0.5 shrink-0 text-danger" />
+                <span className="text-xs text-danger">{calError}</span>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button onClick={() => setCalPhase('capturing')} className="btn btn-ghost h-9 px-4 text-xs">
+                Back
+              </button>
+              <button
+                onClick={saveCalibration}
+                disabled={throttleReversed}
+                className="btn btn-primary h-9 flex-1 gap-2 text-sm"
+              >
+                Save Calibration
+              </button>
+            </div>
+          </div>
+        )}
+
+        {calPhase === 'saving' && (
+          <div className="flex items-center justify-center gap-2 rounded border border-border bg-surface-1 px-4 py-3">
+            <RotateCw size={14} className="animate-spin text-accent" />
+            <span className="text-sm text-muted">Saving calibration...</span>
           </div>
         )}
       </div>
@@ -828,14 +1035,21 @@ function RcChannelBars({
   chancount,
   labels = DEFAULT_LABELS,
   throttleChannel = 3,
+  calPhase,
+  capturedMins,
+  capturedMaxs,
 }: {
   channels: number[];
   chancount: number;
   labels?: string[];
   throttleChannel?: number;
+  calPhase?: string;
+  capturedMins?: number[];
+  capturedMaxs?: number[];
 }) {
   const count = Math.min(chancount, 16);
   const displayChannels = channels.slice(0, count);
+  const isCalibrating = calPhase === 'capturing' || calPhase === 'centering';
 
   return (
     <div className="space-y-1.5">
@@ -846,9 +1060,19 @@ function RcChannelBars({
         const label = labels[i] || `Ch ${i + 1}`;
         const isPrimary = ['Roll', 'Pitch', 'Throttle', 'Yaw'].includes(label);
 
+        // Calibration range overlay
+        const mn = capturedMins?.[i] ?? 99999;
+        const mx = capturedMaxs?.[i] ?? 0;
+        const hasRange = isCalibrating && mn < 99999 && mx > mn;
+        const rangePctL = hasRange ? Math.max(0, Math.min(100, ((mn - 1000) / 1000) * 100)) : 0;
+        const rangePctR = hasRange ? Math.max(0, Math.min(100, ((mx - 1000) / 1000) * 100)) : 0;
+        const rangeGood = hasRange && (mx - mn) >= 300;
+
         let barColor: string;
         if (!isActive) {
           barColor = 'bg-subtle/30';
+        } else if (isCalibrating) {
+          barColor = isPrimary ? 'bg-accent/60' : 'bg-blue-500/40';
         } else if (value < 950 || value > 2050) {
           barColor = 'bg-red-500';
         } else if (value < 1000 || value > 2000) {
@@ -867,11 +1091,33 @@ function RcChannelBars({
               {label}
             </span>
 
-            <div className="relative h-4 flex-1 overflow-hidden rounded bg-surface-2">
+            <div className="relative h-5 flex-1 overflow-hidden rounded bg-surface-2">
+              {/* Center line (non-throttle) */}
               {!isThrottle && (
                 <div className="absolute left-1/2 top-0 h-full w-px bg-border" />
               )}
-              {isActive &&
+
+              {/* Calibration captured range overlay */}
+              {hasRange && (
+                <div
+                  className={`absolute top-0 h-full transition-all duration-75 ${
+                    rangeGood ? 'bg-accent/20' : 'bg-yellow-500/15'
+                  }`}
+                  style={{ left: `${rangePctL}%`, width: `${rangePctR - rangePctL}%` }}
+                />
+              )}
+              {/* Range edge markers */}
+              {hasRange && (
+                <>
+                  <div className="absolute top-0 h-full w-0.5 bg-accent/60"
+                    style={{ left: `${rangePctL}%` }} />
+                  <div className="absolute top-0 h-full w-0.5 bg-accent/60"
+                    style={{ left: `${rangePctR}%` }} />
+                </>
+              )}
+
+              {/* Live value bar */}
+              {isActive && !isCalibrating &&
                 (isThrottle ? (
                   <div
                     className={`absolute left-0 top-0 h-full rounded transition-all duration-75 ${barColor}`}
@@ -886,20 +1132,28 @@ function RcChannelBars({
                     }}
                   />
                 ))}
+
+              {/* Live position cursor */}
               {isActive && (
                 <div
-                  className="absolute top-0 h-full w-0.5 bg-white/80"
+                  className={`absolute top-0 h-full w-0.5 ${isCalibrating ? 'bg-white' : 'bg-white/80'}`}
                   style={{ left: `${pct}%` }}
                 />
               )}
             </div>
 
+            {/* Value + range info */}
             <span
-              className={`w-10 shrink-0 text-right font-mono text-[11px] ${
+              className={`shrink-0 text-right font-mono text-[11px] ${
                 isActive ? 'text-muted' : 'text-subtle/50'
-              }`}
+              } ${isCalibrating ? 'w-28' : 'w-10'}`}
             >
               {isActive ? value : '---'}
+              {isCalibrating && hasRange && (
+                <span className={`ml-1 ${rangeGood ? 'text-success' : 'text-subtle'}`}>
+                  ({mn}-{mx})
+                </span>
+              )}
             </span>
           </div>
         );

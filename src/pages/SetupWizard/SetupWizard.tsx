@@ -29,7 +29,6 @@ import { InitialTuneStep } from './steps/InitialTuneStep';
 import { ControlSurfacesStep } from './steps/ControlSurfacesStep';
 import { OutputMappingStep } from './steps/OutputMappingStep';
 import { TiltServosStep } from './steps/TiltServosStep';
-import { RcCalibrationStep } from './steps/RcCalibrationStep';
 import { TransitionsStep } from './steps/TransitionsStep';
 import { InavImportDialog } from './steps/InavImportDialog';
 import { useConnectionStore } from '@/store/connectionStore';
@@ -653,8 +652,6 @@ function renderStep(
       return <TransitionsStep onCanAdvanceChange={onCanAdvanceChange} />;
     case 'receiver':
       return <ReceiverStep onCanAdvanceChange={onCanAdvanceChange} />;
-    case 'rc_calibration':
-      return <RcCalibrationStep onCanAdvanceChange={onCanAdvanceChange} />;
     case 'gps':
       return <GpsStep onCanAdvanceChange={onCanAdvanceChange} />;
     case 'flight_modes':
