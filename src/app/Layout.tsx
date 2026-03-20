@@ -168,6 +168,7 @@ export function Layout() {
   }, [connectionStatus]);
 
   // Show wizard prompt when saved progress exists or fresh board detected
+  // -- but only after the naming dialog has been dealt with
   useEffect(() => {
     if (
       connectionStatus === 'connected' &&
@@ -175,12 +176,14 @@ export function Layout() {
       !didAutoRedirect.current &&
       !useConnectionStore.getState().pendingPage &&
       !useWizardStore.getState().active &&
+      !showNamingDialog &&
+      !isNewAircraft &&
       parameters.size > 0
     ) {
       didAutoRedirect.current = true;
       setShowFreshBoardPrompt(true);
     }
-  }, [connectionStatus, isFreshBoard, hasSavedWizardProgress, parameters.size]);
+  }, [connectionStatus, isFreshBoard, hasSavedWizardProgress, parameters.size, showNamingDialog, isNewAircraft]);
 
   // Navigate to pending page after reconnection (e.g. after calibration reboot).
   // Uses a direct Zustand subscription instead of useEffect to avoid React
