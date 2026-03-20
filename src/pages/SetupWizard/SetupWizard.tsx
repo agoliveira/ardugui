@@ -172,20 +172,42 @@ export function SetupWizard() {
         // Disconnect expected -- FC is rebooting
       }
 
-      // Wait for FC to restart
-      await new Promise((r) => setTimeout(r, 5000));
+      // Wait for FC to restart -- boards need 8-10s to boot + USB enumerate
+      await new Promise((r) => setTimeout(r, 8000));
 
-      // Step 4: Reconnect
+      // Step 4: Wait for USB device to reappear, then reconnect
       setResetPhase('reconnecting');
       if (savedPort) {
+        // Poll for the port to appear before trying to connect
+        const portReady = await new Promise<boolean>(async (resolve) => {
+          for (let wait = 0; wait < 10; wait++) {
+            try {
+              const ports = await window.electronAPI?.serial.listPorts();
+              if (ports?.some((p: { path: string }) => p.path === savedPort)) {
+                resolve(true);
+                return;
+              }
+            } catch { /* ignore */ }
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+          resolve(false);
+        });
+
+        if (!portReady) {
+          throw new Error('Flight controller did not reappear on USB after reboot');
+        }
+
+        // Small extra delay after USB enumeration -- FC may not be sending MAVLink yet
+        await new Promise((r) => setTimeout(r, 1500));
+
         let portOpened = false;
-        for (let attempt = 0; attempt < 6; attempt++) {
+        for (let attempt = 0; attempt < 4; attempt++) {
           try {
             await connectionManager.connect(savedPort, savedBaud);
             portOpened = true;
             break;
           } catch {
-            await new Promise((r) => setTimeout(r, 2000));
+            await new Promise((r) => setTimeout(r, 3000));
           }
         }
 

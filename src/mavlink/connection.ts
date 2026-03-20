@@ -161,36 +161,45 @@ export class ConnectionManager {
     return this.statusMessages;
   }
 
+  private connecting = false;
+
   async connect(portPath: string, baudRate: number): Promise<void> {
-    // Tear down any existing connection first (prevents port lock issues)
-    this.clearAllTimers();
-    for (const cleanup of this.serialCleanups) cleanup();
-    this.serialCleanups = [];
-    try { await window.electronAPI?.serial.close(); } catch { /* may already be closed */ }
-
-    const connStore = useConnectionStore.getState();
-    connStore.setStatus('connecting');
-    connStore.setPortPath(portPath);
-
-    resetSequence();
-    this.parser.reset();
-    this.resetParamState();
-    this.targetSystem = 0;
-    this.targetComponent = 0;
-    this.statusMessages = [];
-    this.boardDetectedFromStatusText = false;
-    this.lastRcChannelsTime = 0;
-    this.postConnectDone = false;
-    this.seenMsgIds.clear();
-    this.msgCounts.clear();
-    if (this.streamRetryTimer) { clearTimeout(this.streamRetryTimer); this.streamRetryTimer = null; }
-
-    if (!window.electronAPI) {
-      connStore.setError('Not running in Electron. Serial access requires the desktop app.');
+    // Prevent concurrent connect attempts
+    if (this.connecting) {
+      console.warn('Connect already in progress, ignoring duplicate call');
       return;
     }
+    this.connecting = true;
 
     try {
+      // Tear down any existing connection first (prevents port lock issues)
+      this.clearAllTimers();
+      for (const cleanup of this.serialCleanups) cleanup();
+      this.serialCleanups = [];
+      try { await window.electronAPI?.serial.close(); } catch { /* may already be closed */ }
+
+      const connStore = useConnectionStore.getState();
+      connStore.setStatus('connecting');
+      connStore.setPortPath(portPath);
+
+      resetSequence();
+      this.parser.reset();
+      this.resetParamState();
+      this.targetSystem = 0;
+      this.targetComponent = 0;
+      this.statusMessages = [];
+      this.boardDetectedFromStatusText = false;
+      this.lastRcChannelsTime = 0;
+      this.postConnectDone = false;
+      this.seenMsgIds.clear();
+      this.msgCounts.clear();
+      if (this.streamRetryTimer) { clearTimeout(this.streamRetryTimer); this.streamRetryTimer = null; }
+
+      if (!window.electronAPI) {
+        connStore.setError('Not running in Electron. Serial access requires the desktop app.');
+        return;
+      }
+
       await window.electronAPI.serial.open(portPath, baudRate);
 
       const cleanupData = window.electronAPI.serial.onData((data: Uint8Array) => {
@@ -215,11 +224,14 @@ export class ConnectionManager {
       this.startGcsHeartbeat();
       console.log(`Connecting to ${portPath} @ ${baudRate}...`);
     } catch (err) {
-      connStore.setError(`Failed to open port: ${err}`);
+      useConnectionStore.getState().setError(`Failed to open port: ${err}`);
+    } finally {
+      this.connecting = false;
     }
   }
 
   async disconnect(): Promise<void> {
+    this.connecting = false;
     this.clearAllTimers();
 
     for (const cleanup of this.serialCleanups) {
@@ -407,6 +419,7 @@ export class ConnectionManager {
   }
 
   private handleDisconnect(reason: string) {
+    this.connecting = false;
     this.clearAllTimers();
     for (const cleanup of this.serialCleanups) {
       cleanup();
