@@ -89,49 +89,59 @@ export class SerialManager {
     this.lastPortPaths = [];
   }
 
+  private opening = false;
+
   async open(
     portPath: string,
     baudRate: number,
     events: SerialManagerEvents
   ): Promise<void> {
-    // Close any existing connection first
-    if (this.port && this.port.isOpen) {
-      await this.close();
+    // Prevent concurrent open attempts
+    if (this.opening) return;
+    this.opening = true;
+
+    try {
+      // Close any existing connection first
+      if (this.port && this.port.isOpen) {
+        await this.close();
+      }
+
+      this.events = events;
+
+      return await new Promise((resolve, reject) => {
+        this.port = new SerialPort(
+          {
+            path: portPath,
+            baudRate,
+            autoOpen: false,
+          }
+        );
+
+        this.port.on('data', (data: Buffer) => {
+          this.events?.onData(new Uint8Array(data));
+        });
+
+        this.port.on('error', (err: Error) => {
+          this.events?.onError(err.message);
+        });
+
+        this.port.on('close', () => {
+          this.events?.onClose();
+        });
+
+        this.port.open((err) => {
+          if (err) {
+            this.port = null;
+            reject(new Error(`Failed to open ${portPath}: ${err.message}`));
+            return;
+          }
+          console.log(`Serial port opened: ${portPath} @ ${baudRate}`);
+          resolve();
+        });
+      });
+    } finally {
+      this.opening = false;
     }
-
-    this.events = events;
-
-    return new Promise((resolve, reject) => {
-      this.port = new SerialPort(
-        {
-          path: portPath,
-          baudRate,
-          autoOpen: false,
-        }
-      );
-
-      this.port.on('data', (data: Buffer) => {
-        this.events?.onData(new Uint8Array(data));
-      });
-
-      this.port.on('error', (err: Error) => {
-        this.events?.onError(err.message);
-      });
-
-      this.port.on('close', () => {
-        this.events?.onClose();
-      });
-
-      this.port.open((err) => {
-        if (err) {
-          this.port = null;
-          reject(new Error(`Failed to open ${portPath}: ${err.message}`));
-          return;
-        }
-        console.log(`Serial port opened: ${portPath} @ ${baudRate}`);
-        resolve();
-      });
-    });
   }
 
   async close(): Promise<void> {
@@ -175,9 +185,15 @@ export class SerialManager {
           reject(new Error(`Write failed: ${err.message}`));
           return;
         }
-        this.port!.drain((drainErr) => {
+        // Port may have closed between write() and this callback
+        if (!this.port || !this.port.isOpen) {
+          resolve();
+          return;
+        }
+        this.port.drain((drainErr) => {
           if (drainErr) {
-            reject(new Error(`Drain failed: ${drainErr.message}`));
+            // Port may have closed during drain -- not fatal
+            resolve();
             return;
           }
           resolve();
