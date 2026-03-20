@@ -6,6 +6,46 @@ This project is in **pre-alpha** and does not yet follow semantic versioning. Ve
 
 ---
 
+## [1.0.0-rc2] -- 2026-03-20
+
+### Fleet View
+- "My Aircraft" page replaces "Backups" -- card grid with drill-down to snapshot detail
+- Vehicle-type-colored borders, real AirframeIcon watermarks from stored preset metadata
+- Archive/unarchive aircraft, editable notes, sidebar visibility when disconnected
+- Aircraft metadata persistence (frame preset, board name) via JSON in DB
+
+### Bug Fixes
+- Custom .apj flash: no longer rejects files with missing/zero image_size before decompression
+- INAV migration: hex URL uses detected vehicle type instead of stale state closure
+- Fleet archive toggle now always visible when archived aircraft exist
+- Double "v" stripped from firmware version display
+
+## [1.0.0-rc1] -- 2026-03-15
+
+### Setup Wizard
+- 14-step write-as-you-go wizard (Frame, Outputs, Motors, Surfaces, Tilt Servos, Transitions, Receiver with RC cal, GPS, Compass, Accel, Flight Modes, Failsafes, Initial Tune, Review)
+- All steps skippable with safety warnings at Review
+- Board detection dialog (resume, start fresh, factory reset)
+- Wizard persistence across app restarts
+
+### Standalone Pages
+- 20+ pages: Motors, GPS, Control Surfaces, Transitions, Battery, ESC, Calibration, Flight Modes, Failsafes, Pre-flight, Firmware, Wiring, Ports, Configuration, CLI, Expert, OSD, Navigation, PID Tuning, Receiver
+
+### INAV Migration
+- 174-board timer-to-pad mapping, full "dump all" parser
+- Migration flow: detect INAV, CLI dump, board mapping, flash guide, auto-import
+- Channel map, OSD layout, GPS constellations, compass orientation, VTOL detection
+
+### Infrastructure
+- Help system (3-tier: tooltip, overlay, wiki link)
+- Unified CopterMotorDiagram (shared by wizard and standalone)
+- Aircraft naming (first-connect prompt, header rename)
+- Demo mode, light/dark theme, UI zoom (60-200%), window bounds persistence
+- Auto-backup on connect (SQLite), manual snapshots, diff viewer, selective restore
+- Factory reset before wizard, close window guard, GitHub CI
+
+---
+
 ## [0.1.0] -- 2026-02-25
 
 **Initial public release. Pre-alpha, not field-tested.**

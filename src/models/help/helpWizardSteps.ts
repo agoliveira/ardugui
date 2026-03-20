@@ -18,7 +18,7 @@ For planes, "Conventional" means a standard airplane with ailerons, elevator, an
 
 For VTOL (quadplane), you are combining a plane frame with vertical-lift motors. This is the most complex configuration. Select the quadplane variant that matches your motor arrangement -- most tiltrotors use "Tri Tilt" or "Quad Tilt."
 
-If you are migrating from INAV, use the "Migrating from INAV?" link at the bottom. Paste your "diff all" output and ArduGUI will auto-detect your frame type and pre-fill most settings. This saves significant time and reduces configuration errors.`,
+If you are migrating from INAV, use the "Migrating from INAV?" link at the bottom. Paste your "dump all" output and ArduGUI will auto-detect your frame type and pre-fill most settings. This saves significant time and reduces configuration errors.`,
     wikiUrl: 'https://ardupilot.org/copter/docs/frame-type-configuration.html',
   },
 

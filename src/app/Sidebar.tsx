@@ -36,7 +36,7 @@ const allNavItems: NavItem[] = [
   { id: 'configuration', label: 'Configuration', icon: Cpu },
   { id: 'osd', label: 'OSD', icon: MonitorSmartphone },
   { id: 'transitions', label: 'Transitions', icon: ArrowRightLeft },
-  { id: 'backups', label: 'Backups', icon: Database },
+  { id: 'my_aircraft', label: 'My Aircraft', icon: Database },
   { id: 'preflight', label: 'Pre-flight', icon: ShieldCheck },
   { id: 'cli', label: 'CLI', icon: Terminal },
   { id: 'expert', label: 'Expert', icon: Wrench },

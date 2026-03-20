@@ -69,6 +69,8 @@ export interface InavConfig {
   channelMap: string | null;
   /** OSD layout entries: profile -> element_id -> { x, y, visible } */
   osdLayouts: Map<number, { x: number; y: number; visible: boolean }>;
+  /** Aircraft name from the INAV 'name' command */
+  craftName: string | null;
 }
 
 export interface InavMotorMix {
@@ -153,6 +155,7 @@ export function parseInavDiff(text: string): InavConfig {
     allPlatformTypes: new Set(),
     channelMap: null,
     osdLayouts: new Map(),
+    craftName: null,
   };
 
   const lines = text.split('\n');
@@ -171,6 +174,13 @@ export function parseInavDiff(text: string): InavConfig {
 
     // Skip comments and empty lines
     if (line.startsWith('#') || line === '') continue;
+
+    // Craft name: standalone "name My Racing Quad" command
+    const nameMatch = line.match(/^name\s+(.+)/i);
+    if (nameMatch) {
+      config.craftName = nameMatch[1].trim();
+      continue;
+    }
 
     // Top-level mixer (older INAV style) -- but not "mixer_profile"
     const mixerMatch = line.match(/^mixer\s+(\S+)/i);
@@ -351,6 +361,8 @@ export interface ImportResult {
   frameDescription: string | null;
   /** Effective cell count used for voltage calculations */
   cellCount: number;
+  /** Aircraft name from INAV (if set) */
+  craftName: string | null;
 }
 
 /** Detected configuration extracted from INAV (for display in UI) */
@@ -845,6 +857,34 @@ export function mapToArduPilot(
     }
   }
 
+  // Fallback: INAV 9.x+ uses model_preview_type inside mixer_profile
+  // instead of a standalone 'mixer QUADX' command. Map to FRAME_CLASS/TYPE
+  // so FrameStep can auto-select the correct preset.
+  if (vehicleType === 'copter' && !params['FRAME_CLASS'] && config.modelPreviewType !== null) {
+    const previewToFrame: Record<number, { cls: number; type: number; name: string }> = {
+      1:  { cls: 1,  type: 1, name: 'Quad X' },
+      2:  { cls: 1,  type: 0, name: 'Quad +' },
+      3:  { cls: 7,  type: 0, name: 'Tricopter' },
+      4:  { cls: 2,  type: 1, name: 'Hex X' },
+      5:  { cls: 2,  type: 0, name: 'Hex +' },
+      6:  { cls: 14, type: 0, name: 'Y6' },
+      9:  { cls: 4,  type: 1, name: 'Octo Flat X' },
+      10: { cls: 4,  type: 0, name: 'Octo Flat +' },
+    };
+    const pf = previewToFrame[config.modelPreviewType];
+    if (pf) {
+      params['FRAME_CLASS'] = pf.cls;
+      params['FRAME_TYPE'] = pf.type;
+      summary.push({
+        category: 'Frame',
+        label: 'Frame type',
+        inavValue: `model_preview_type ${config.modelPreviewType} (${pf.name})`,
+        arduPilotParam: 'FRAME_CLASS + FRAME_TYPE',
+        arduPilotValue: `${pf.cls} / ${pf.type}`,
+      });
+    }
+  }
+
   if (vehicleType && vehicleType !== 'quadplane' && frameDescription) {
     summary.push({
       category: 'Frame',
@@ -1161,14 +1201,13 @@ export function mapToArduPilot(
 
   // ── Craft name ──────────────────────────────────────────────────
 
-  const craftName = config.settings.get('name');
-  if (craftName) {
+  if (config.craftName) {
     summary.push({
       category: 'General',
       label: 'Craft name',
-      inavValue: craftName,
+      inavValue: config.craftName,
       arduPilotParam: '(info)',
-      arduPilotValue: `"${craftName}" -- set in your GCS (Mission Planner / QGC)`,
+      arduPilotValue: `"${config.craftName}" -- will be used as the aircraft name`,
     });
   }
 
@@ -1274,29 +1313,54 @@ export function mapToArduPilot(
 
   // ── OSD layout ──────────────────────────────────────────────────
 
-  const osdMapped = mapOsdLayout(config.osdLayouts);
+  // ── OSD video system and layout ─────────────────────────────────
+
+  // Detect video system from INAV settings
+  const videoSystem = (config.settings.get('osd_video_system') ?? 'AUTO').toUpperCase();
+  const hdSystems = ['HD', 'HDZERO', 'DJIWTF', 'AVATAR', 'DJIGOGGLES_V1', 'DJIGOGGLES_V2'];
+  const isHdOsd = hdSystems.includes(videoSystem);
+
+  // ArduPilot OSD_TYPE: 1 = MAX7456 (analog), 3 = MSP displayport (HD)
+  const osdType = isHdOsd ? 3 : 1;
+
+  // Coordinate limits: analog 30x16 (PAL) / 30x13 (NTSC), HD 50x18 (ArduPilot MSP)
+  const maxX = isHdOsd ? 49 : 29;
+  const maxY = isHdOsd ? 17 : 15;
+
+  const osdMapped = mapOsdLayout(config.osdLayouts, maxX, maxY);
   if (osdMapped.length > 0) {
     // ArduPilot OSD params: OSD1_RSSI_EN, OSD1_RSSI_X, OSD1_RSSI_Y
     // The "1" is the OSD screen number. INAV layout 0 maps to ArduPilot screen 1.
     const osdScreen = 1;
     let osdCount = 0;
+    let clampedCount = 0;
     for (const item of osdMapped) {
       // Replace OSD_ prefix with OSD1_ (or OSD2_ for other screens)
       const apParam = item.apPrefix.replace('OSD_', `OSD${osdScreen}_`);
       params[`${apParam}_EN`] = 1;
       params[`${apParam}_X`] = item.x;
       params[`${apParam}_Y`] = item.y;
+      if (item.clamped) clampedCount++;
       osdCount++;
     }
     // Enable OSD and screen 1
-    params['OSD_TYPE'] = 1;  // 1 = analog (MAX7456)
+    params['OSD_TYPE'] = osdType;
     params['OSD1_ENABLE'] = 1;
+
+    const osdTypeLabel = isHdOsd ? `MSP displayport (${videoSystem})` : `MAX7456 (${videoSystem === 'AUTO' ? 'auto' : videoSystem.toLowerCase()})`;
+    summary.push({
+      category: 'OSD',
+      label: 'OSD type',
+      inavValue: videoSystem,
+      arduPilotParam: 'OSD_TYPE',
+      arduPilotValue: `${osdType} (${osdTypeLabel})`,
+    });
     summary.push({
       category: 'OSD',
       label: 'OSD elements',
       inavValue: `${config.osdLayouts.size} elements (${[...config.osdLayouts.values()].filter(v => v.visible).length} visible)`,
       arduPilotParam: 'OSD1_*',
-      arduPilotValue: `${osdCount} elements mapped to screen 1`,
+      arduPilotValue: `${osdCount} elements mapped to screen 1${clampedCount > 0 ? ` (${clampedCount} repositioned to fit)` : ''}`,
     });
   }
 
@@ -1552,7 +1616,7 @@ export function mapToArduPilot(
     hasFlaps: config.hasFlaps,
   };
 
-  return { params, detected, summary, skipped, vehicleType, frameDescription, cellCount: effectiveCells };
+  return { params, detected, summary, skipped, vehicleType, frameDescription, cellCount: effectiveCells, craftName: config.craftName };
 }
 
 /* ================================================================== */
@@ -1804,7 +1868,10 @@ function mapCompassOrientation(inavAlign: string): number | null {
  * Map INAV OSD element IDs to ArduPilot OSD parameter prefixes.
  *
  * Only maps visible elements with known ArduPilot equivalents.
- * Grid coordinates transfer directly (both use 30x16 char grid on analog OSD).
+ * Coordinates are clamped to fit ArduPilot's grid:
+ *   Analog (MAX7456): 30x16 (PAL) / 30x13 (NTSC)
+ *   HD (MSP displayport): 50x18
+ * INAV HD uses 53x20 so some elements may be repositioned.
  */
 
 const INAV_TO_AP_OSD: Record<number, string> = {
@@ -1853,10 +1920,14 @@ interface OsdMappedItem {
   x: number;
   y: number;
   inavId: number;
+  /** True if coordinates were clamped to fit ArduPilot grid */
+  clamped: boolean;
 }
 
 function mapOsdLayout(
   layouts: Map<number, { x: number; y: number; visible: boolean }>,
+  maxX: number = 29,
+  maxY: number = 15,
 ): OsdMappedItem[] {
   const result: OsdMappedItem[] = [];
   // Track which AP params we've already assigned (avoid duplicates)
@@ -1870,11 +1941,19 @@ function mapOsdLayout(
     if (assigned.has(apPrefix)) continue; // First occurrence wins
 
     assigned.add(apPrefix);
+
+    // Clamp coordinates to ArduPilot grid limits
+    // INAV HD uses 53x20 but ArduPilot MSP displayport is 50x18
+    const clampedX = Math.min(pos.x, maxX);
+    const clampedY = Math.min(pos.y, maxY);
+    const wasClamped = clampedX !== pos.x || clampedY !== pos.y;
+
     result.push({
       apPrefix,
-      x: pos.x,
-      y: pos.y,
+      x: clampedX,
+      y: clampedY,
       inavId: elementId,
+      clamped: wasClamped,
     });
   }
 

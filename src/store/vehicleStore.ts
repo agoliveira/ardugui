@@ -89,7 +89,7 @@ export function getVisiblePages(
   const tail = [
     'failsafes',
     ...(hasOsd ? ['osd'] as string[] : []),
-    'backups',
+    'my_aircraft',
     'preflight',
     'cli',
     ...(expertMode ? ['expert'] as string[] : []),

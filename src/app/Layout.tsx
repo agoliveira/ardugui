@@ -21,7 +21,7 @@ import { NavigationPage } from '@/pages/Navigation/NavigationPage';
 import { FailsafesPage } from '@/pages/Failsafes/FailsafesPage';
 import { OSDPage } from '@/pages/OSD/OSDPage';
 import { CalibrationPage } from '@/pages/Calibration/CalibrationPage';
-import { BackupsPage } from '@/pages/Backups/BackupsPage';
+import { MyAircraftPage } from '@/pages/MyAircraft/MyAircraftPage';
 import { TransitionsPage } from '@/pages/Transitions/TransitionsPage';
 import { GpsPage } from '@/pages/Gps/GpsPage';
 import { ControlSurfacesPage } from '@/pages/ControlSurfaces/ControlSurfacesPage';
@@ -60,7 +60,7 @@ export type PageId =
   | 'esc'
   | 'osd'
   | 'transitions'
-  | 'backups'
+  | 'my_aircraft'
   | 'cli'
   | 'expert';
 
@@ -250,13 +250,28 @@ export function Layout() {
 
   const paramsLoaded = useParameterStore((s) => s.loaded);
   const debugEnabled = useDebugStore((s) => s.enabled);
+
+  // Track whether any aircraft exist in the DB (for sidebar visibility when disconnected)
+  const [hasAircraft, setHasAircraft] = useState(false);
+  useEffect(() => {
+    const check = async () => {
+      const result = await window.electronAPI?.db?.hasAnyAircraft();
+      setHasAircraft(result ?? false);
+    };
+    check();
+  }, [connectionStatus]); // re-check after connect/disconnect since connect upserts aircraft
+
   const visiblePages = useMemo(() => {
     // Only show full nav after params are loaded (status === 'connected')
-    if (connectionStatus !== 'connected') return ['connect', 'firmware'];
+    if (connectionStatus !== 'connected') {
+      const pages = ['connect', 'firmware'];
+      if (hasAircraft) pages.push('my_aircraft');
+      return pages;
+    }
     const params = useParameterStore.getState().parameters;
     const hasOsd = params.has('OSD_TYPE');
     return getVisiblePages(vehicleType, { hasOsd, expertMode: debugEnabled });
-  }, [vehicleType, paramsLoaded, connectionStatus, debugEnabled]);
+  }, [vehicleType, paramsLoaded, connectionStatus, debugEnabled, hasAircraft]);
 
   // Redirect if the active page is no longer visible (e.g. expert mode toggled off)
   useEffect(() => {
@@ -349,8 +364,8 @@ export function Layout() {
         return <TransitionsPage />;
       case 'cli':
         return <CLIPage />;
-      case 'backups':
-        return <BackupsPage />;
+      case 'my_aircraft':
+        return <MyAircraftPage />;
       case 'expert':
         return <ExpertPage />;
       default:

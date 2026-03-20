@@ -3,7 +3,7 @@
  *
  * Steps:
  *   1. Welcome: detected INAV, choose migrate-with-config or start-fresh
- *   2. Extract: auto-pull "diff all" from INAV CLI
+ *   2. Extract: auto-pull "dump all" from INAV CLI
  *   3. Firmware: identify ArduPilot firmware, download _with_bl.hex
  *   4. Flash: platform-specific DFU instructions
  *   5. Connect: try MAVLink connection to the now-ArduPilot board
@@ -27,7 +27,7 @@ interface InavMigrationFlowProps {
   portPath: string;
   baudRate: number;
   portManufacturer: string;
-  onComplete: (config: { diffAll: string; inavConfig: InavConfig } | null) => void;
+  onComplete: (config: { inavDump: string; inavConfig: InavConfig } | null) => void;
   onCancel: () => void;
 }
 
@@ -41,7 +41,7 @@ export function InavMigrationFlow({
 
   // Extracted data
   const [inavInfo, setInavInfo] = useState<InavInfo | null>(null);
-  const [diffAll, setDiffAll] = useState<string | null>(null);
+  const [inavDump, setInavDump] = useState<string | null>(null);
   const [inavConfig, setInavConfig] = useState<InavConfig | null>(null);
   const [boardMapping, setBoardMapping] = useState<InavBoardMapping | null>(null);
   const [hexUrl, setHexUrl] = useState<string | null>(null);
@@ -68,17 +68,20 @@ export function InavMigrationFlow({
       const info = await cli.getStatus(setProgress);
       setInavInfo(info);
 
-      // Extract diff all (if migrating with config)
-      let rawDiff: string | null = null;
+      // Extract dump all (if migrating with config)
+      let rawDump: string | null = null;
       let config: InavConfig | null = null;
+      // Track detected type locally -- state update is async, can't rely
+      // on vehicleType from the closure for hex URL construction below
+      let detectedType: 'copter' | 'plane' = vehicleType;
 
       if (migrateWithConfig) {
-        rawDiff = await cli.extractDiffAll(setProgress);
-        setDiffAll(rawDiff);
+        rawDump = await cli.extractDumpAll(setProgress);
+        setInavDump(rawDump);
 
         // Parse the config
         setProgress('Parsing configuration...');
-        config = parseInavDiff(rawDiff);
+        config = parseInavDiff(rawDump);
         setInavConfig(config);
 
         // Use parsed board name if status didn't find it
@@ -90,6 +93,7 @@ export function InavMigrationFlow({
         // Auto-detect vehicle type from INAV config
         if (config.platformType === 'AIRPLANE' || config.modelPreviewType === 14 ||
             config.mixer?.includes('FLYING_WING') || config.mixer?.includes('AIRPLANE')) {
+          detectedType = 'plane';
           setVehicleType('plane');
         }
       }
@@ -100,9 +104,9 @@ export function InavMigrationFlow({
         setBoardMapping(mapping);
 
         if (mapping) {
-          // Build the hex URL
-          const typeDir = vehicleType === 'copter' ? 'Copter' : 'Plane';
-          const typeName = vehicleType === 'copter' ? 'arducopter' : 'arduplane';
+          // Build the hex URL using the locally-tracked type (not stale state)
+          const typeDir = detectedType === 'copter' ? 'Copter' : 'Plane';
+          const typeName = detectedType === 'copter' ? 'arducopter' : 'arduplane';
           setHexUrl(`https://firmware.ardupilot.org/${typeDir}/latest/${mapping.arduPlatform}/${typeName}_with_bl.hex`);
         }
       }
@@ -176,8 +180,8 @@ export function InavMigrationFlow({
       if (connected) {
         setProgress('ArduPilot connected!');
         // Hand off to caller with the saved config
-        onComplete(migrateWithConfig && diffAll && inavConfig
-          ? { diffAll, inavConfig }
+        onComplete(migrateWithConfig && inavDump && inavConfig
+          ? { inavDump, inavConfig }
           : null);
       } else {
         setError('Could not establish ArduPilot connection. Make sure the firmware was flashed correctly.');
@@ -187,7 +191,7 @@ export function InavMigrationFlow({
       setError(`Connection failed: ${err}`);
       setReconnecting(false);
     }
-  }, [portPath, baudRate, migrateWithConfig, diffAll, inavConfig, onComplete]);
+  }, [portPath, baudRate, migrateWithConfig, inavDump, inavConfig, onComplete]);
 
   // ── Platform detection ────────────────────────────────────────────
 
@@ -334,7 +338,7 @@ export function InavMigrationFlow({
               {migrateWithConfig && inavConfig && (
                 <div>
                   <span className="text-xs text-subtle">Config Lines</span>
-                  <p className="font-bold text-foreground">{diffAll?.split('\n').length ?? 0}</p>
+                  <p className="font-bold text-foreground">{inavDump?.split('\n').length ?? 0}</p>
                 </div>
               )}
             </div>

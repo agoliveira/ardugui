@@ -15,8 +15,12 @@ export function registerDbHandlers(): void {
     return db.getAircraft(id);
   });
 
-  ipcMain.handle('db:list-aircraft', () => {
-    return db.listAircraft();
+  ipcMain.handle('db:list-aircraft', (_e, includeArchived?: boolean) => {
+    return db.listAircraft(includeArchived ?? false);
+  });
+
+  ipcMain.handle('db:has-any-aircraft', () => {
+    return db.hasAnyAircraft();
   });
 
   ipcMain.handle('db:upsert-aircraft', (_e, data: Parameters<typeof db.upsertAircraft>[0]) => {
@@ -29,6 +33,26 @@ export function registerDbHandlers(): void {
 
   ipcMain.handle('db:delete-aircraft', (_e, id: string) => {
     db.deleteAircraft(id);
+  });
+
+  ipcMain.handle('db:archive-aircraft', (_e, id: string) => {
+    db.archiveAircraft(id);
+  });
+
+  ipcMain.handle('db:unarchive-aircraft', (_e, id: string) => {
+    db.unarchiveAircraft(id);
+  });
+
+  ipcMain.handle('db:update-aircraft-notes', (_e, id: string, notes: string | null) => {
+    db.updateAircraftNotes(id, notes);
+  });
+
+  ipcMain.handle('db:update-aircraft-metadata', (_e, id: string, metadata: string | null) => {
+    db.updateAircraftMetadata(id, metadata);
+  });
+
+  ipcMain.handle('db:get-snapshot-count', (_e, aircraftId: string) => {
+    return db.getSnapshotCount(aircraftId);
   });
 
   // ── Snapshots ──────────────────────────────────────────────────────

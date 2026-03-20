@@ -79,10 +79,11 @@ export async function parseApj(jsonText: string): Promise<ApjFirmware> {
     throw new Error('Invalid APJ file: missing board_id');
   }
 
-  const imageSize = data.image_size as number;
-  if (typeof imageSize !== 'number' || imageSize <= 0) {
-    throw new Error('Invalid APJ file: invalid image_size');
-  }
+  // image_size in the JSON header refers to the DECOMPRESSED size.
+  // Some custom APJ files may have this set to the compressed size,
+  // set to zero, or omit it entirely. We read it but only validate
+  // after decompression when we know the actual image length.
+  const declaredImageSize = typeof data.image_size === 'number' ? (data.image_size as number) : 0;
 
   const imageBase64 = data.image as string;
   if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
@@ -97,13 +98,17 @@ export async function parseApj(jsonText: string): Promise<ApjFirmware> {
   // We reverse: base64.decode() -> zlib.decompress()
   const image = await zlibDecompress(compressed);
 
-  // Validate decompressed size matches header
-  if (image.length !== imageSize) {
-    // Not fatal -- some APJ files may have slightly different reported sizes
-    // But a huge mismatch suggests decompression failure
-    if (Math.abs(image.length - imageSize) > 1024) {
+  // Validate decompressed image is non-empty
+  if (image.length === 0) {
+    throw new Error('Invalid APJ file: decompressed image is empty');
+  }
+
+  // If the header declared a size, sanity-check it against actual
+  if (declaredImageSize > 0 && image.length !== declaredImageSize) {
+    // Not fatal for small mismatches -- some build tools round differently
+    if (Math.abs(image.length - declaredImageSize) > 1024) {
       throw new Error(
-        `APJ image size mismatch: header says ${imageSize} bytes ` +
+        `APJ image size mismatch: header says ${declaredImageSize} bytes ` +
         `but decompressed to ${image.length} bytes`
       );
     }

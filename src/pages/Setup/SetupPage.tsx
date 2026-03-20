@@ -134,13 +134,13 @@ export function SetupPage() {
     await connectionManager.connect(portPath, baudRate);
   };
 
-  const handleMigrationComplete = (config: { diffAll: string } | null) => {
+  const handleMigrationComplete = (config: { inavDump: string } | null) => {
     setShowMigration(false);
     setMigrationPort(null);
-    if (config?.diffAll) {
-      // Store diff and auto-import flag so the wizard picks it up automatically
+    if (config?.inavDump) {
+      // Store dump and auto-import flag so the wizard picks it up automatically
       try {
-        sessionStorage.setItem('ardugui-inav-diff', config.diffAll);
+        sessionStorage.setItem('ardugui-inav-dump', config.inavDump);
         sessionStorage.setItem('ardugui-inav-auto-import', '1');
       } catch { /* ignore */ }
     }

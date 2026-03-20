@@ -34,7 +34,7 @@ import { TransitionsStep } from './steps/TransitionsStep';
 import { InavImportDialog } from './steps/InavImportDialog';
 import { useConnectionStore } from '@/store/connectionStore';
 import { connectionManager } from '@/mavlink/connection';
-import { runAutoBackup } from '@/utils/autoBackup';
+import { runAutoBackup, saveAircraftName } from '@/utils/autoBackup';
 
 type ResetPhase = 'confirm' | 'backup' | 'resetting' | 'rebooting' | 'reconnecting' | null;
 
@@ -468,7 +468,7 @@ export function SetupWizard() {
       {showInavImport && (
         <InavImportDialog
           onClose={() => setShowInavImport(false)}
-          onImported={(importedVehicleType, importedParams) => {
+          onImported={(importedVehicleType, importedParams, importedCraftName) => {
             setShowInavImport(false);
             setShowWelcome(false);
             const store = useWizardStore.getState();
@@ -481,6 +481,10 @@ export function SetupWizard() {
             // Re-stage imported params after start
             if (importedParams) {
               store.stageParams(importedParams);
+            }
+            // Use INAV craft name as the ArduGUI aircraft name
+            if (importedCraftName) {
+              saveAircraftName(importedCraftName);
             }
           }}
         />

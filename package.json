@@ -1,6 +1,6 @@
 {
   "name": "ardugui",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "description": "Desktop configurator for ArduPilot flight controllers",
   "author": {
     "name": "ArduGUI Contributors",

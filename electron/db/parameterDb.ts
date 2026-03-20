@@ -25,6 +25,10 @@ export interface Aircraft {
   board_type: string | null;
   vehicle_type: string | null;
   firmware_version: string | null;
+  notes: string | null;
+  metadata: string | null;
+  photo_path: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -130,6 +134,20 @@ export async function initDb(): Promise<void> {
     ON snapshots(aircraft_id, created_at DESC)
   `);
 
+  // ── Schema migrations ─────────────────────────────────────────────
+  // Add columns that may not exist in older databases.
+  // SQLite ALTER TABLE ADD COLUMN is safe -- it's a no-op if the column exists
+  // (we catch the "duplicate column" error and ignore it).
+  const migrateColumns = [
+    'ALTER TABLE aircraft ADD COLUMN notes TEXT DEFAULT NULL',
+    'ALTER TABLE aircraft ADD COLUMN metadata TEXT DEFAULT NULL',
+    'ALTER TABLE aircraft ADD COLUMN photo_path TEXT DEFAULT NULL',
+    'ALTER TABLE aircraft ADD COLUMN archived_at TEXT DEFAULT NULL',
+  ];
+  for (const sql of migrateColumns) {
+    try { db.run(sql); } catch { /* column already exists */ }
+  }
+
   save();
   console.log(`[ParamDB] Initialized at ${filePath}`);
 }
@@ -167,14 +185,25 @@ export function getAircraft(id: string): Aircraft | null {
   return null;
 }
 
-export function listAircraft(): Aircraft[] {
+export function listAircraft(includeArchived = false): Aircraft[] {
   const results: Aircraft[] = [];
-  const stmt = getDb().prepare('SELECT * FROM aircraft ORDER BY updated_at DESC');
+  const sql = includeArchived
+    ? 'SELECT * FROM aircraft ORDER BY archived_at IS NOT NULL, updated_at DESC'
+    : 'SELECT * FROM aircraft WHERE archived_at IS NULL ORDER BY updated_at DESC';
+  const stmt = getDb().prepare(sql);
   while (stmt.step()) {
     results.push(stmt.getAsObject() as unknown as Aircraft);
   }
   stmt.free();
   return results;
+}
+
+export function hasAnyAircraft(): boolean {
+  const stmt = getDb().prepare('SELECT COUNT(*) as cnt FROM aircraft WHERE archived_at IS NULL');
+  stmt.step();
+  const row = stmt.getAsObject() as { cnt: number };
+  stmt.free();
+  return row.cnt > 0;
 }
 
 export function upsertAircraft(data: {
@@ -225,6 +254,35 @@ export function upsertAircraft(data: {
 export function renameAircraft(id: string, name: string): void {
   getDb().run('UPDATE aircraft SET name = ?, updated_at = ? WHERE id = ?', [name, now(), id]);
   save();
+}
+
+export function archiveAircraft(id: string): void {
+  getDb().run('UPDATE aircraft SET archived_at = ?, updated_at = ? WHERE id = ?', [now(), now(), id]);
+  save();
+}
+
+export function unarchiveAircraft(id: string): void {
+  getDb().run('UPDATE aircraft SET archived_at = NULL, updated_at = ? WHERE id = ?', [now(), id]);
+  save();
+}
+
+export function updateAircraftNotes(id: string, notes: string | null): void {
+  getDb().run('UPDATE aircraft SET notes = ?, updated_at = ? WHERE id = ?', [notes, now(), id]);
+  save();
+}
+
+export function updateAircraftMetadata(id: string, metadata: string | null): void {
+  getDb().run('UPDATE aircraft SET metadata = ?, updated_at = ? WHERE id = ?', [metadata, now(), id]);
+  save();
+}
+
+export function getSnapshotCount(aircraftId: string): number {
+  const stmt = getDb().prepare('SELECT COUNT(*) as cnt FROM snapshots WHERE aircraft_id = :id');
+  stmt.bind({ ':id': aircraftId });
+  stmt.step();
+  const row = stmt.getAsObject() as { cnt: number };
+  stmt.free();
+  return row.cnt;
 }
 
 export function deleteAircraft(id: string): void {

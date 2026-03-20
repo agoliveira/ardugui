@@ -227,4 +227,17 @@ Common connections:
 
 The pad labels match what's printed on your physical board, so you can match the diagram directly to your soldering.`,
   },
+
+  my_aircraft: {
+    summary: 'Browse your registered aircraft, manage parameter snapshots, and track configuration history.',
+    detail: `This page shows all aircraft that have been connected to ArduGUI. Each card displays the aircraft name, vehicle type, board, firmware version, and how many parameter snapshots exist.
+
+Click a card to drill into its snapshot history. From there you can create new snapshots, compare snapshots against live FC parameters, selectively restore individual parameters, and import or export .param files.
+
+Connected aircraft appear at the top with a green "Live" badge. Only the connected aircraft supports creating snapshots, diffing against current values, and restoring parameters. Disconnected aircraft are read-only -- you can browse snapshots and export .param files but not create or restore.
+
+Aircraft you no longer fly can be archived to keep the fleet view clean. Archived aircraft and their snapshots are preserved and can be restored at any time. Permanent deletion is available from the archived view.
+
+Auto-backup (enabled per aircraft) saves a snapshot every time you connect, giving you a rolling history of your configuration over time.`,
+  },
 };

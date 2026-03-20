@@ -1,8 +1,8 @@
 /**
- * InavImportDialog.tsx -- Modal dialog for importing INAV "diff all" config.
+ * InavImportDialog.tsx -- Modal dialog for importing INAV "dump all" config.
  *
  * Flow:
- *   1. User pastes INAV "diff all" text (or drops a file)
+ *   1. User pastes INAV "dump all" text (or drops a file)
  *   2. Parser runs, shows summary of what was detected
  *   3. User confirms cell count and reviews mapped vs skipped items
  *   4. On confirm, all mapped params are staged into the wizard store
@@ -10,7 +10,7 @@
  * Launched from FrameStep via "Migrating from INAV?" link.
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   X,
   Upload,
@@ -43,6 +43,7 @@ interface InavImportDialogProps {
   onImported: (
     vehicleType?: 'copter' | 'plane' | 'quadplane' | null,
     params?: Record<string, number>,
+    craftName?: string | null,
   ) => void;
 }
 
@@ -57,13 +58,17 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
   const boardId = useVehicleStore((s) => s.boardId);
   const batteryVoltage = useTelemetryStore((s) => s.battery?.voltage ?? 0);
 
+  // Track whether config was pre-loaded from the INAV migration flow
+  const [loadedFromMigration, setLoadedFromMigration] = useState(false);
+
   const [phase, setPhase] = useState<Phase>('input');
   const [rawText, setRawText] = useState(() => {
     // Auto-load config from migration flow if available
     try {
-      const saved = sessionStorage.getItem('ardugui-inav-diff');
+      const saved = sessionStorage.getItem('ardugui-inav-dump');
       if (saved) {
-        sessionStorage.removeItem('ardugui-inav-diff');
+        sessionStorage.removeItem('ardugui-inav-dump');
+        // Flag will be set in useEffect below (can't call setState during initializer)
         return saved;
       }
     } catch { /* ignore */ }
@@ -75,6 +80,18 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
   const [result, setResult] = useState<ImportResult | null>(null);
   const [parsedConfig, setParsedConfig] = useState<InavConfig | null>(null);
   const [validated, setValidated] = useState(false); // true once format check passed
+
+  // Detect migration auto-load on mount (rawText was set from sessionStorage)
+  const didAutoLoad = useRef(false);
+  useEffect(() => {
+    if (!didAutoLoad.current && rawText.length > 100) {
+      // Check if this looks like a migration dump (has INAV header)
+      if (/^#\s*INAV\s*\//im.test(rawText) || /^dump all/im.test(rawText)) {
+        didAutoLoad.current = true;
+        setLoadedFromMigration(true);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount only
 
   const board = useMemo(
     () => (boardId ? getBoardById(boardId) : null),
@@ -206,6 +223,16 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
     }
   }, [rawText, board, cellCount]);
 
+  // Auto-parse when config was pre-loaded from migration flow.
+  // Fires once after validation passes, skipping the manual "Parse Config" step.
+  const didAutoParse = useRef(false);
+  useEffect(() => {
+    if (loadedFromMigration && validated && !didAutoParse.current && rawText.length > 100) {
+      didAutoParse.current = true;
+      handleParse();
+    }
+  }, [loadedFromMigration, validated, rawText, handleParse]);
+
   // Re-map when cell count changes in preview
   const handleCellCountChange = useCallback((cells: number) => {
     setCellCount(cells);
@@ -220,12 +247,12 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
   const handleApply = useCallback(() => {
     if (!result) return;
     // Pass result to parent -- it will start the wizard then stage params
-    onImported(result.vehicleType, result.params);
+    onImported(result.vehicleType, result.params, result.craftName);
   }, [result, onImported]);
 
   // ── File drop ──────────────────────────────────────────────────────
 
-  const MAX_IMPORT_SIZE = 500_000; // 500 KB -- a diff all is typically under 10 KB
+  const MAX_IMPORT_SIZE = 500_000; // 500 KB -- a dump all is typically ~50 KB
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -281,18 +308,38 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
 
           {phase === 'input' && (
             <div className="space-y-4">
-              <p className="text-sm text-muted">
-                Paste your INAV CLI output below. Open the INAV Configurator CLI tab and type{' '}
-                <span className="font-mono text-accent">dump all</span>, then copy the full output.
-              </p>
-              <div className="flex items-start gap-2 rounded border border-blue-500/30 bg-blue-900/15 px-3 py-2">
-                <span className="text-[10px] text-blue-400 font-bold mt-0.5">TIP</span>
-                <p className="text-xs text-blue-300/80">
-                  <span className="font-mono font-semibold">dump all</span> gives the best results
-                  (complete output mapping). <span className="font-mono">diff all</span> also works
-                  but motor/servo pad assignments may need manual verification.
-                </p>
-              </div>
+              {loadedFromMigration ? (
+                <>
+                  {/* Migration-aware banner -- config was extracted during the migration flow */}
+                  <div className="flex items-start gap-3 rounded border border-accent/30 bg-accent/5 px-4 py-3">
+                    <Check size={16} className="mt-0.5 shrink-0 text-accent" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        INAV configuration loaded from migration
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {rawText.split('\n').length.toLocaleString()} lines captured from your board.
+                        {' '}Click "Parse Config" to review the mapping, or paste a different config below.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted">
+                    Paste your INAV CLI output below. Open the INAV Configurator CLI tab and type{' '}
+                    <span className="font-mono text-accent">dump all</span>, then copy the full output.
+                  </p>
+                  <div className="flex items-start gap-2 rounded border border-blue-500/30 bg-blue-900/15 px-3 py-2">
+                    <span className="text-[10px] text-blue-400 font-bold mt-0.5">TIP</span>
+                    <p className="text-xs text-blue-300/80">
+                      <span className="font-mono font-semibold">dump all</span> gives the best results
+                      (complete output mapping). <span className="font-mono">diff all</span> also works
+                      but motor/servo pad assignments may need manual verification.
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div
                 className="relative"

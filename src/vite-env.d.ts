@@ -54,6 +54,10 @@ declare global {
     board_type: string | null;
     vehicle_type: string | null;
     firmware_version: string | null;
+    notes: string | null;
+    metadata: string | null;
+    photo_path: string | null;
+    archived_at: string | null;
     created_at: string;
     updated_at: string;
   }
@@ -84,7 +88,8 @@ declare global {
   interface ElectronDbAPI {
     // Aircraft
     getAircraft: (id: string) => Promise<DbAircraft | null>;
-    listAircraft: () => Promise<DbAircraft[]>;
+    listAircraft: (includeArchived?: boolean) => Promise<DbAircraft[]>;
+    hasAnyAircraft: () => Promise<boolean>;
     upsertAircraft: (data: {
       id: string;
       name: string;
@@ -94,6 +99,11 @@ declare global {
     }) => Promise<DbAircraft>;
     renameAircraft: (id: string, name: string) => Promise<void>;
     deleteAircraft: (id: string) => Promise<void>;
+    archiveAircraft: (id: string) => Promise<void>;
+    unarchiveAircraft: (id: string) => Promise<void>;
+    updateAircraftNotes: (id: string, notes: string | null) => Promise<void>;
+    updateAircraftMetadata: (id: string, metadata: string | null) => Promise<void>;
+    getSnapshotCount: (aircraftId: string) => Promise<number>;
 
     // Snapshots
     createSnapshot: (

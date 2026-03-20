@@ -7,7 +7,7 @@
  * Usage:
  *   const cli = new InavCli();
  *   await cli.open('/dev/ttyACM0', 115200);
- *   const diffAll = await cli.extractDiffAll();
+ *   const dump = await cli.extractDumpAll();
  *   await cli.close();
  */
 
@@ -69,6 +69,8 @@ export class InavCli {
 
   /**
    * Wait until the buffer contains a specific string or times out.
+   * Good for simple markers that won't appear mid-stream (e.g. error text).
+   * For the CLI prompt '# ', use waitForPrompt() instead.
    */
   private waitFor(marker: string, timeoutMs: number = 5000): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -90,6 +92,55 @@ export class InavCli {
           resolve(buf);
         }
       };
+    });
+  }
+
+  /**
+   * Wait for the INAV CLI prompt '# ' at the end of the buffer.
+   *
+   * Unlike waitFor(), this distinguishes the real prompt from comment
+   * lines that also contain '# ' (e.g. '# version', '# INAV/BOARD...').
+   * The real prompt appears on its own line at the buffer tail with no
+   * text following it. We require 300ms of silence after detecting the
+   * pattern to confirm the FC has finished sending data.
+   */
+  private waitForPrompt(timeoutMs: number = 5000): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const cleanup = () => {
+        if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+        this.resolveWaiter = null;
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error(`Timeout waiting for CLI prompt after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      const check = () => {
+        // The CLI prompt is '# ' on its own line at the end of the buffer.
+        // Match: newline (or start of buffer) followed by '# ' at the very end.
+        if (/(\r?\n|^)# $/.test(this.buffer)) {
+          // Looks like a prompt -- wait for silence to confirm it's real
+          // (not a partially-received comment line like '# vers' before 'ion\r\n')
+          if (settleTimer) clearTimeout(settleTimer);
+          settleTimer = setTimeout(() => {
+            clearTimeout(timer);
+            this.resolveWaiter = null;
+            resolve(this.buffer);
+          }, 300);
+        } else {
+          // More data arrived after the '# ' -- it was a comment, not a prompt
+          if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+        }
+      };
+
+      // Check current buffer immediately
+      check();
+
+      // Re-check on each new data arrival
+      this.resolveWaiter = () => check();
     });
   }
 
@@ -146,27 +197,29 @@ export class InavCli {
   }
 
   /**
-   * Extract "diff all" output from INAV CLI.
-   * This is the main config extraction function.
+   * Extract "dump all" output from INAV CLI.
+   * This is the main config extraction function. Uses "dump all" instead of
+   * "diff all" to capture every parameter including defaults, giving the
+   * import parser the full picture.
    */
-  async extractDiffAll(onProgress?: ProgressCallback): Promise<string> {
-    onProgress?.('Extracting configuration...');
+  async extractDumpAll(onProgress?: ProgressCallback): Promise<string> {
+    onProgress?.('Extracting full configuration...');
     this.clearBuffer();
-    await this.send('diff all\r\n');
+    await this.send('dump all\r\n');
 
-    // diff all can take a while on boards with lots of config
-    // Wait for the trailing '# ' prompt with a generous timeout
-    await this.waitFor('# ', 30000);
+    // dump all output contains '# ' comment lines that look like the prompt.
+    // waitForPrompt uses settle-based detection to find the real trailing prompt.
+    await this.waitForPrompt(60000);
 
     const output = this.buffer;
 
-    // Extract just the diff output
-    const diffIdx = output.indexOf('diff all');
+    // Extract just the dump output
+    const dumpIdx = output.indexOf('dump all');
     const promptIdx = output.lastIndexOf('# ');
-    if (diffIdx >= 0 && promptIdx > diffIdx) {
-      const diffText = output.substring(diffIdx, promptIdx).trim();
-      onProgress?.(`Extracted ${diffText.split('\n').length} lines of configuration`);
-      return diffText;
+    if (dumpIdx >= 0 && promptIdx > dumpIdx) {
+      const dumpText = output.substring(dumpIdx, promptIdx).trim();
+      onProgress?.(`Extracted ${dumpText.split('\n').length} lines of configuration`);
+      return dumpText;
     }
 
     onProgress?.('Configuration extracted');

@@ -194,12 +194,12 @@ tools/
 
 ---
 
-## Known Issues (v1.0.0-rc1)
+## Known Issues (v1.0.0-rc2)
 
-- Connected flash path (MAVLink reboot-to-bootloader) -- untested
+- Connected flash path (MAVLink reboot-to-bootloader) -- needs hardware verification
 - OSD import param names -- code-reviewed but not hardware-verified
-- Custom `.apj` flash reports "invalid image_size" -- validation happens before decompression
-- Connected flash navigates to connect page instead of staying on firmware page
+- INAV CLI extraction -- untested on real INAV hardware
+- Occasional "no heartbeat" after reboot cycles
 
 See [TODO.md](TODO.md) for the full roadmap.
 

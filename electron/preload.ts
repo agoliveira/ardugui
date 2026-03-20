@@ -61,13 +61,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   db: {
     // Aircraft
     getAircraft: (id: string) => ipcRenderer.invoke('db:get-aircraft', id),
-    listAircraft: () => ipcRenderer.invoke('db:list-aircraft'),
+    listAircraft: (includeArchived?: boolean) => ipcRenderer.invoke('db:list-aircraft', includeArchived),
+    hasAnyAircraft: () => ipcRenderer.invoke('db:has-any-aircraft'),
     upsertAircraft: (data: { id: string; name: string; board_type?: string | null; vehicle_type?: string | null; firmware_version?: string | null }) =>
       ipcRenderer.invoke('db:upsert-aircraft', data),
     renameAircraft: (id: string, name: string) =>
       ipcRenderer.invoke('db:rename-aircraft', id, name),
     deleteAircraft: (id: string) =>
       ipcRenderer.invoke('db:delete-aircraft', id),
+    archiveAircraft: (id: string) =>
+      ipcRenderer.invoke('db:archive-aircraft', id),
+    unarchiveAircraft: (id: string) =>
+      ipcRenderer.invoke('db:unarchive-aircraft', id),
+    updateAircraftNotes: (id: string, notes: string | null) =>
+      ipcRenderer.invoke('db:update-aircraft-notes', id, notes),
+    updateAircraftMetadata: (id: string, metadata: string | null) =>
+      ipcRenderer.invoke('db:update-aircraft-metadata', id, metadata),
+    getSnapshotCount: (aircraftId: string) =>
+      ipcRenderer.invoke('db:get-snapshot-count', aircraftId),
 
     // Snapshots
     createSnapshot: (aircraftId: string, label: string, source: 'auto' | 'manual' | 'import', params: { name: string; value: number; type: string | null }[]) =>

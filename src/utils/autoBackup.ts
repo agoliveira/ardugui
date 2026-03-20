@@ -9,8 +9,129 @@
 import { useParameterStore } from '../store/parameterStore';
 import { useVehicleStore } from '../store/vehicleStore';
 import { getBoardById } from '../models/boardRegistry';
+import { AIRFRAME_PRESETS } from '../models/airframeTemplates';
+import type { VehicleType } from '../store/vehicleStore';
 
 const PREF_AUTO_BACKUP = 'auto_backup_on_connect';
+
+/**
+ * Detect the airframe preset ID from current FC parameters.
+ * Pure function (no hooks) -- mirrors useDetectedPreset logic.
+ * Returns the preset ID string (e.g. "copter_quad_x") or null.
+ */
+export function detectPresetId(): string | null {
+  const { parameters } = useParameterStore.getState();
+  const { type: vehicleType } = useVehicleStore.getState();
+  if (!parameters.size || !vehicleType) return null;
+
+  const getVal = (name: string): number | null =>
+    parameters.get(name)?.value ?? null;
+
+  const effectivelyVtol = vehicleType === 'quadplane';
+  const effectivelyPlane = vehicleType === 'plane';
+
+  // Copters & VTOLs: match by additionalParams (FRAME_CLASS/TYPE)
+  for (const preset of AIRFRAME_PRESETS) {
+    const ap = preset.additionalParams;
+    if (!ap) continue;
+
+    const allMatch = Object.entries(ap).every(([key, val]) => getVal(key) === val);
+    if (allMatch) {
+      if (preset.category === 'vtol' && !effectivelyVtol) continue;
+      if (preset.category === 'copter' && vehicleType !== 'copter') continue;
+      return preset.id;
+    }
+  }
+
+  // Planes: match by output-to-function mapping
+  if (effectivelyPlane) {
+    let bestId: string | null = null;
+    let bestScore = -1;
+
+    for (const preset of AIRFRAME_PRESETS) {
+      if (preset.category !== 'plane') continue;
+
+      const expectedOutputs = new Map<number, number>();
+      if (preset.planeTemplate) {
+        for (const s of preset.planeTemplate.surfaces) {
+          expectedOutputs.set(s.defaultOutput, s.function);
+        }
+      }
+      for (const m of preset.motorTemplate.forwardMotors) {
+        expectedOutputs.set(m.defaultOutput, m.function);
+      }
+      if (expectedOutputs.size === 0) continue;
+
+      let matches = 0;
+      for (const [output, expectedFunc] of expectedOutputs) {
+        if (getVal(`SERVO${output}_FUNCTION`) === expectedFunc) matches++;
+      }
+
+      let extraNonZero = 0;
+      for (let i = 1; i <= 16; i++) {
+        if (!expectedOutputs.has(i)) {
+          const val = getVal(`SERVO${i}_FUNCTION`);
+          if (val !== null && val !== 0) extraNonZero++;
+        }
+      }
+
+      const score = matches - (extraNonZero * 0.1);
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = preset.id;
+      }
+    }
+
+    if (bestId) {
+      const bestPreset = AIRFRAME_PRESETS.find((p) => p.id === bestId);
+      if (bestPreset) {
+        const expectedSize = (bestPreset.planeTemplate?.surfaces.length ?? 0) +
+          bestPreset.motorTemplate.forwardMotors.length;
+        if (bestScore >= expectedSize * 0.7) return bestId;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get and merge metadata JSON for an aircraft, preserving existing fields.
+ */
+async function updateMetadataField(
+  aircraftId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  const api = window.electronAPI?.db;
+  if (!api) return;
+  const existing = await api.getAircraft(aircraftId);
+  let current: Record<string, unknown> = {};
+  if (existing?.metadata) {
+    try { current = JSON.parse(existing.metadata); } catch { /* ignore */ }
+  }
+  const merged = { ...current, ...fields };
+  await api.updateAircraftMetadata(aircraftId, JSON.stringify(merged));
+}
+
+/**
+ * Store the detected frame preset ID and board type in aircraft metadata.
+ * Called after params are loaded (during auto-backup or identify).
+ */
+async function persistAircraftMetadata(aircraftId: string, vehicleType: VehicleType): Promise<void> {
+  const presetId = detectPresetId();
+  const fields: Record<string, unknown> = {};
+  if (presetId) fields.presetId = presetId;
+  if (vehicleType) fields.vehicleType = vehicleType;
+  // Store board type from boardRegistry for richer card display
+  const { boardId } = useVehicleStore.getState();
+  if (boardId) {
+    const board = getBoardById(boardId);
+    if (board?.name) fields.boardName = board.name;
+  }
+  if (Object.keys(fields).length > 0) {
+    await updateMetadataField(aircraftId, fields);
+  }
+}
 
 /**
  * Build the aircraft identity string used as the DB primary key.
@@ -122,6 +243,7 @@ export async function runAutoBackup(): Promise<boolean> {
   });
 
   await api.createSnapshot(aircraftId, `Auto-backup ${timestamp}`, 'auto', params);
+  await persistAircraftMetadata(aircraftId, type);
   console.log(`[AutoBackup] Created snapshot with ${params.length} params for ${aircraftId}`);
   return true;
 }
@@ -180,6 +302,9 @@ export async function identifyAircraft(): Promise<void> {
     store.setAircraftName(defaultName);
     store.setIsNewAircraft(true);
   }
+
+  // Persist frame preset and board info in metadata (for fleet view cards)
+  await persistAircraftMetadata(aircraftId, store.type);
 }
 
 /**
