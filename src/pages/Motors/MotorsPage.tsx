@@ -23,7 +23,8 @@ import {
 import { useDetectedPreset } from '@/hooks/useDetectedPreset';
 import { useTelemetryStore } from '@/store/telemetryStore';
 import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
-import { AirframeIcon, AIRFRAME_VIEWBOX, QUAD } from '@/components/AirframeIcons';
+import { AirframeIcon, AIRFRAME_VIEWBOX } from '@/components/AirframeIcons';
+import { CopterMotorDiagram } from '@/components/MotorOverlay';
 
 const V = AIRFRAME_VIEWBOX;
 
@@ -44,87 +45,8 @@ const MC = {
 
 
 // ============================================================
-// Copter Motor Diagram -- AirframeIcon base + interactive overlay
+// Copter Motor Diagram -- AirframeIcon base + shared MotorOverlay
 // ============================================================
-
-function CopterMotorOverlay({
-  motors, testingMotor, enabled, onMotorClick,
-}: {
-  motors: MotorDef[];
-  testingMotor: number | null;
-  enabled: boolean;
-  onMotorClick: (n: number) => void;
-}) {
-  const { cx, cy } = QUAD;
-
-  // Use the same scale function as AirframeIcons
-  const scale = motors.length <= 4
-    ? { r: 10, arm: 32 }
-    : motors.length <= 6
-      ? { r: 8, arm: 36 }
-      : { r: 6, arm: 38 };
-
-  return (
-    <>
-      {motors.map((m) => {
-        const mx = cx + m.x * scale.arm;
-        const my = cy - m.y * scale.arm;
-        const isTesting = testingMotor === m.number;
-        const color = isTesting ? '#ffcc66' : m.rotation === 'CCW' ? MC.ccw : MC.cw;
-        const dimmed = !enabled && !isTesting;
-        const r = scale.r;
-        const isCW = m.rotation === 'CW';
-
-        // Rotation arrow arc
-        const arcR = r - 2;
-        const startAngle = isCW ? -100 : 100;
-        const endAngle = isCW ? 100 : -100;
-        const sa = (startAngle * Math.PI) / 180;
-        const ea = (endAngle * Math.PI) / 180;
-        const sx = mx + arcR * Math.cos(sa);
-        const sy = my + arcR * Math.sin(sa);
-        const ex = mx + arcR * Math.cos(ea);
-        const ey = my + arcR * Math.sin(ea);
-        const sweepFlag = isCW ? 1 : 0;
-
-        const tipAngle = ea + (isCW ? 0.3 : -0.3);
-        const baseAngle1 = ea - (isCW ? 0.15 : -0.15);
-        const baseAngle2 = ea - (isCW ? 0.5 : -0.5);
-        const tipX = mx + (arcR + 1.5) * Math.cos(tipAngle);
-        const tipY = my + (arcR + 1.5) * Math.sin(tipAngle);
-        const b1X = mx + (arcR - 1) * Math.cos(baseAngle1);
-        const b1Y = my + (arcR - 1) * Math.sin(baseAngle1);
-        const b2X = mx + (arcR + 1) * Math.cos(baseAngle2);
-        const b2Y = my + (arcR + 1) * Math.sin(baseAngle2);
-
-        return (
-          <g key={`motor-${m.number}`}
-            className={enabled ? 'cursor-pointer' : 'cursor-not-allowed'}
-            onClick={() => enabled && onMotorClick(m.number)}
-            opacity={dimmed ? 0.35 : 1}>
-            {/* Background disc to mask AirframeIcon's ring */}
-            <circle cx={mx} cy={my} r={r + 2} fill={MC.bg} />
-            {/* Motor ring */}
-            <circle cx={mx} cy={my} r={r} fill={MC.bg} stroke={color} strokeWidth={2} />
-            {/* Rotation arc */}
-            <path d={`M ${sx},${sy} A ${arcR},${arcR} 0 1,${sweepFlag} ${ex},${ey}`}
-              fill="none" stroke={color} strokeWidth="1" opacity="0.5" />
-            <polygon points={`${tipX},${tipY} ${b1X},${b1Y} ${b2X},${b2Y}`}
-              fill={color} opacity="0.5" />
-            {/* Number */}
-            <circle cx={mx} cy={my} r={4} fill={color} />
-            <text x={mx} y={my + 1.5} textAnchor="middle" dominantBaseline="central"
-              fill={isTesting ? '#000' : '#f1f5f9'} fontSize="7" fontWeight="900"
-              fontFamily="ui-monospace, monospace">{m.number}</text>
-            {/* Rotation label */}
-            <text x={mx} y={my + r + 5} textAnchor="middle" fill={color} fontSize="4"
-              fontFamily="ui-monospace, monospace" fontWeight="700">{m.rotation}</text>
-          </g>
-        );
-      })}
-    </>
-  );
-}
 
 
 // ============================================================
@@ -724,25 +646,15 @@ export function MotorsPage() {
                 <ExternalLink size={10} /> Motor Order Reference
               </a>
             </div>
-            <svg viewBox={`0 0 ${V} ${V}`} className="mx-auto w-full max-w-[500px]">
-              <rect width={V} height={V} rx="6" fill={MC.bg} stroke={MC.bgStroke} strokeWidth="1" />
-              {/* Frame name */}
-              <text x={QUAD.cx} y="8" textAnchor="middle" fill={MC.neutral} fontSize="5"
-                fontFamily="ui-monospace, monospace" fontWeight="700">{motorLayout.name}</text>
-              {/* FRONT marker */}
-              <polygon points={`${QUAD.cx - 3},14 ${QUAD.cx + 3},14 ${QUAD.cx},10`} fill={MC.nose} />
-              <text x={QUAD.cx} y="19" textAnchor="middle" fill={MC.nose} fontSize="4.5"
-                fontFamily="ui-monospace, monospace" fontWeight="800">FRONT</text>
-              {/* AirframeIcon as base silhouette */}
-              <AirframeIcon preset={detectedPreset} size={V} selected={false} />
-              {/* Interactive motor overlay */}
-              <CopterMotorOverlay
-                motors={motorLayout.motors}
+            <CopterMotorDiagram
+                preset={detectedPreset}
+                layout={motorLayout}
                 testingMotor={testingMotor}
+                motorResults={{}}
                 enabled={controlsEnabled && testingMotor === null}
                 onMotorClick={handleMotorTest}
+                className="mx-auto w-full max-w-[500px]"
               />
-            </svg>
             <p className="mt-2 text-center text-[15px] text-subtle">
               Click a motor to test it •{' '}
               <span className="text-blue-400">Blue = CCW</span> •{' '}
