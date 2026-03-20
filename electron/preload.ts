@@ -1,7 +1,13 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 // Expose a safe API to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Zoom control -- scales entire UI uniformly
+  zoom: {
+    get: () => webFrame.getZoomFactor(),
+    set: (factor: number) => webFrame.setZoomFactor(factor),
+  },
+
   // Serial port operations
   serial: {
     listPorts: () => ipcRenderer.invoke('serial:list-ports'),

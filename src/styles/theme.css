@@ -9,7 +9,7 @@
  * Audience: technical FPV/ArduPilot pilots configuring in the field.
  * Contrast: all accent/text combos pass WCAG AA. Designed for outdoor use.
  * Style: VS Code clarity meets Betaflight density. Every pixel earns its place.
- * Base font: 16px. If it's smaller than 13px it better be a badge.
+ * Base font: 18px. If it's smaller than 13px it better be a badge.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
@@ -127,7 +127,7 @@
     font-family: var(--font-sans);
     background: var(--color-background);
     color: var(--color-foreground);
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.5;
     overflow: hidden;
     user-select: none;

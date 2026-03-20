@@ -1,9 +1,10 @@
-import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench, Sun, Moon, MonitorPlay } from 'lucide-react';
+import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench, Sun, Moon, MonitorPlay, ZoomIn, ZoomOut } from 'lucide-react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
 import { useDebugStore } from '@/store/debugStore';
 import { useThemeStore } from '@/store/themeStore';
+import { useZoomStore } from '@/store/zoomStore';
 import { useDemoStore } from '@/store/demoStore';
 import { connectionManager } from '@/mavlink/connection';
 import { HealthBar } from '@/components/HealthBar';
@@ -20,6 +21,10 @@ export function Header() {
   const toggleDebug = useDebugStore((s) => s.toggle);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggle);
+  const zoomFactor = useZoomStore((s) => s.factor);
+  const zoomIn = useZoomStore((s) => s.zoomIn);
+  const zoomOut = useZoomStore((s) => s.zoomOut);
+  const zoomReset = useZoomStore((s) => s.reset);
   const demoActive = useDemoStore((s) => s.active);
   const startDemo = useDemoStore((s) => s.start);
   const stopDemo = useDemoStore((s) => s.stop);
@@ -128,6 +133,25 @@ export function Header() {
           title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
           {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
         </button>
+
+        {/* Zoom controls */}
+        <div className="flex items-center gap-0.5">
+          <button onClick={zoomOut}
+            className="flex h-6 w-6 items-center justify-center rounded text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
+            title="Zoom out (Ctrl+-)">
+            <ZoomOut size={12} />
+          </button>
+          <button onClick={zoomReset}
+            className="flex h-6 items-center justify-center rounded px-1 text-[10px] font-bold text-subtle hover:bg-surface-2 hover:text-muted transition-colors tabular-nums"
+            title="Reset zoom (Ctrl+0)">
+            {Math.round(zoomFactor * 100)}%
+          </button>
+          <button onClick={zoomIn}
+            className="flex h-6 w-6 items-center justify-center rounded text-subtle hover:bg-surface-2 hover:text-muted transition-colors"
+            title="Zoom in (Ctrl++)">
+            <ZoomIn size={12} />
+          </button>
+        </div>
 
         {!isConnected && !demoActive && (
           <button onClick={startDemo}

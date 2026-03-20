@@ -68,12 +68,12 @@ export function HelpTip({ helpKey, entry: directEntry, inline = false }: HelpTip
 
       {/* Expanded panel (Tier 2 + 3) */}
       {expanded && !inline && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-72 rounded border border-border bg-surface-1 p-3 shadow-xl">
-          <p className="text-xs leading-relaxed text-muted">{entry.explain}</p>
+        <div className="absolute top-full left-0 z-50 mt-1 w-80 rounded border border-border bg-surface-1 p-4 shadow-xl">
+          <p className="text-sm leading-relaxed text-muted">{entry.explain}</p>
           {entry.wikiUrl && (
             <a href={entry.wikiUrl} target="_blank" rel="noopener noreferrer"
-              className="mt-2 flex items-center gap-1 text-[11px] text-accent hover:underline">
-              <ExternalLink size={10} /> Learn more on ArduPilot Wiki
+              className="mt-2 flex items-center gap-1 text-xs text-accent hover:underline">
+              <ExternalLink size={11} /> Learn more on ArduPilot Wiki
             </a>
           )}
         </div>
@@ -81,12 +81,12 @@ export function HelpTip({ helpKey, entry: directEntry, inline = false }: HelpTip
 
       {/* Inline expanded (for use inside cards) */}
       {expanded && inline && (
-        <div className="ml-2 text-xs leading-relaxed text-muted">
+        <div className="ml-2 text-sm leading-relaxed text-muted">
           {entry.explain}
           {entry.wikiUrl && (
             <a href={entry.wikiUrl} target="_blank" rel="noopener noreferrer"
-              className="ml-1 inline-flex items-center gap-0.5 text-[11px] text-accent hover:underline">
-              <ExternalLink size={9} /> Wiki
+              className="ml-1 inline-flex items-center gap-0.5 text-xs text-accent hover:underline">
+              <ExternalLink size={10} /> Wiki
             </a>
           )}
         </div>
@@ -130,14 +130,62 @@ export function StepHelp({ stepId }: StepHelpProps) {
           {/* Backdrop -- click to dismiss */}
           <div className="fixed inset-0 z-30" onClick={() => setExpanded(false)} />
           {/* Overlay panel */}
-          <div className="absolute left-0 right-0 top-full z-40 rounded-b border border-t-0 border-border bg-surface-1/95 backdrop-blur-sm px-4 py-3 shadow-xl space-y-2">
+          <div className="absolute left-0 right-0 top-full z-40 rounded-b border border-t-0 border-border bg-surface-1/95 backdrop-blur-sm px-5 py-4 shadow-xl space-y-3">
             {entry.detail.split('\n\n').map((para, i) => (
-              <p key={i} className="text-xs leading-relaxed text-muted">{para}</p>
+              <p key={i} className="text-sm leading-relaxed text-muted">{para}</p>
             ))}
             {entry.wikiUrl && (
               <a href={entry.wikiUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[11px] text-accent hover:underline">
-                <ExternalLink size={10} /> Learn more on ArduPilot Wiki
+                className="flex items-center gap-1 text-xs text-accent hover:underline">
+                <ExternalLink size={12} /> Learn more on ArduPilot Wiki
+              </a>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * PageHelp -- collapsible help bar for standalone sidebar pages.
+ * Same overlay pattern as StepHelp but uses PAGE_HELP data.
+ */
+import { PAGE_HELP } from '@/models/help';
+
+interface PageHelpProps {
+  pageId: string;
+}
+
+export function PageHelp({ pageId }: PageHelpProps) {
+  const entry = PAGE_HELP[pageId];
+  if (!entry) return null;
+
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="relative rounded border border-border bg-surface-0 overflow-visible">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-surface-1"
+      >
+        <HelpCircle size={14} className="shrink-0 text-accent" />
+        <span className="flex-1 text-sm text-muted">{entry.summary}</span>
+        {expanded
+          ? <ChevronUp size={14} className="shrink-0 text-subtle" />
+          : <ChevronDown size={14} className="shrink-0 text-subtle" />}
+      </button>
+      {expanded && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setExpanded(false)} />
+          <div className="absolute left-0 right-0 top-full z-40 rounded-b border border-t-0 border-border bg-surface-1/95 backdrop-blur-sm px-5 py-4 shadow-xl space-y-3">
+            {entry.detail.split('\n\n').map((para, i) => (
+              <p key={i} className="text-sm leading-relaxed text-muted">{para}</p>
+            ))}
+            {entry.wikiUrl && (
+              <a href={entry.wikiUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-accent hover:underline">
+                <ExternalLink size={12} /> Learn more on ArduPilot Wiki
               </a>
             )}
           </div>

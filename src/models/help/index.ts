@@ -39,6 +39,7 @@ export { HELP_TUNE } from './helpTune';
 export { HELP_ESC } from './helpEsc';
 export { HELP_SURFACES } from './helpSurfaces';
 export { WIZARD_STEP_HELP } from './helpWizardSteps';
+export { PAGE_HELP } from './helpPages';
 
 /** Lookup a help entry by key across all domains. */
 import { HELP_FRAME } from './helpFrame';

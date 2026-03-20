@@ -127,7 +127,13 @@ declare global {
     setPreference: (key: string, value: string) => Promise<void>;
   }
 
+  interface ElectronZoomAPI {
+    get: () => number;
+    set: (factor: number) => void;
+  }
+
   interface ElectronAPI {
+    zoom: ElectronZoomAPI;
     serial: ElectronSerialAPI;
     fs: ElectronFsAPI;
     net: ElectronNetAPI;

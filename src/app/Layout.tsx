@@ -33,6 +33,7 @@ import { FirmwarePage } from '@/pages/Firmware/FirmwarePage';
 import { SetupWizard } from '@/pages/SetupWizard/SetupWizard';
 import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { PageHelp } from '@/components/HelpTip';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { useDebugStore } from '@/store/debugStore';
 
@@ -406,6 +407,9 @@ export function Layout() {
           isConnected={connectionStatus === 'connected'}
         />
         <main className="flex-1 overflow-y-auto bg-background px-4 py-3">
+          <div className="mb-3">
+            <PageHelp pageId={activePage} />
+          </div>
           {renderPage()}
         </main>
       </div>
