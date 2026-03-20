@@ -118,8 +118,8 @@ export function CopterMotorDiagram({
           const ddx = mx - cx;
           const ddy = my - cy;
           const dist = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
-          mx += (ddx / dist) * (R * 1.1);
-          my += (ddy / dist) * (R * 1.1);
+          mx += (ddx / dist) * (R * 1.6);
+          my += (ddy / dist) * (R * 1.6);
         }
 
         const isCW = motor.rotation === 'CW';
@@ -228,10 +228,10 @@ export function CopterMotorDiagram({
                 {motor.rotation}
               </text>
             ) : (
-              // Coaxial bottom motors: label to the outward side
+              // Coaxial bottom motors: label to the outward side, close to ring
               <text
-                x={mx + (mx > cx ? R + 2 : -(R + 2))}
-                y={my + R * 0.15}
+                x={mx + (mx > cx ? R * 0.6 : -(R * 0.6))}
+                y={my + R + 3}
                 textAnchor={mx > cx ? 'start' : 'end'}
                 fill={baseColor} fontSize={R * 0.3}
                 fontFamily="ui-monospace, monospace" fontWeight="700"
@@ -243,8 +243,8 @@ export function CopterMotorDiagram({
             {/* Bottom coaxial label */}
             {isBottom && (
               <text
-                x={mx + (mx > cx ? R + 2 : -(R + 2))}
-                y={my + R * 0.15 + R * 0.35}
+                x={mx + (mx > cx ? R * 0.6 : -(R * 0.6))}
+                y={my + R + 3 + R * 0.35}
                 textAnchor={mx > cx ? 'start' : 'end'}
                 fill="#666" fontSize={R * 0.25}
                 fontFamily="ui-monospace, monospace">BOTTOM</text>

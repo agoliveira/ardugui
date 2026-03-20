@@ -1,15 +1,61 @@
-import { app, BrowserWindow, dialog, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, Menu, ipcMain, screen } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { registerSerialHandlers } from './serial/serialBridge';
 import { initDb, closeDb } from './db/parameterDb';
 import { registerDbHandlers } from './db/dbBridge';
 
 let mainWindow: BrowserWindow | null = null;
 
+/* ------------------------------------------------------------------ */
+/*  Window bounds persistence                                          */
+/* ------------------------------------------------------------------ */
+
+interface WindowBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  maximized: boolean;
+}
+
+const boundsFile = () => path.join(app.getPath('userData'), 'window-bounds.json');
+
+function loadBounds(): WindowBounds | null {
+  try {
+    const data = fs.readFileSync(boundsFile(), 'utf-8');
+    const b = JSON.parse(data) as WindowBounds;
+    // Validate bounds are on a visible display
+    const displays = screen.getAllDisplays();
+    const visible = displays.some((d) => {
+      const area = d.workArea;
+      return b.x >= area.x - 100 && b.x < area.x + area.width &&
+             b.y >= area.y - 100 && b.y < area.y + area.height;
+    });
+    return visible ? b : null;
+  } catch { return null; }
+}
+
+function saveBounds(win: BrowserWindow) {
+  try {
+    const maximized = win.isMaximized();
+    // Save the non-maximized bounds so restoring doesn't lose the normal size
+    const bounds = maximized ? (win as any).__normalBounds ?? win.getBounds() : win.getBounds();
+    const data: WindowBounds = { ...bounds, maximized };
+    fs.writeFileSync(boundsFile(), JSON.stringify(data));
+  } catch { /* ignore */ }
+}
+
+/* ------------------------------------------------------------------ */
+
 function createWindow() {
+  const saved = loadBounds();
+
   mainWindow = new BrowserWindow({
-    width: 1920,
-    height: 1080,
+    x: saved?.x,
+    y: saved?.y,
+    width: saved?.width ?? 1920,
+    height: saved?.height ?? 1080,
     minWidth: 1280,
     minHeight: 720,
     title: 'ArduGUI',
@@ -20,6 +66,22 @@ function createWindow() {
       nodeIntegration: false,
       devTools: true,
     },
+  });
+
+  if (saved?.maximized) {
+    mainWindow.maximize();
+  }
+
+  // Track normal (non-maximized) bounds for persistence
+  mainWindow.on('resize', () => {
+    if (mainWindow && !mainWindow.isMaximized()) {
+      (mainWindow as any).__normalBounds = mainWindow.getBounds();
+    }
+  });
+  mainWindow.on('move', () => {
+    if (mainWindow && !mainWindow.isMaximized()) {
+      (mainWindow as any).__normalBounds = mainWindow.getBounds();
+    }
   });
 
   // In development, Vite serves the renderer
@@ -37,6 +99,7 @@ function createWindow() {
   let forceClose = false;
 
   mainWindow.on('close', (e) => {
+    if (mainWindow) saveBounds(mainWindow);
     if (forceClose) return;
 
     e.preventDefault();
