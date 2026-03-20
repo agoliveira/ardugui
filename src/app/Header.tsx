@@ -1,4 +1,5 @@
-import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench, Sun, Moon, MonitorPlay, ZoomIn, ZoomOut } from 'lucide-react';
+import { useState } from 'react';
+import { Wifi, WifiOff, Shield, ShieldOff, Loader2, Unplug, Wrench, Sun, Moon, MonitorPlay, ZoomIn, ZoomOut, Pencil, Check, X } from 'lucide-react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { useTelemetryStore } from '@/store/telemetryStore';
@@ -8,6 +9,7 @@ import { useZoomStore } from '@/store/zoomStore';
 import { useDemoStore } from '@/store/demoStore';
 import { connectionManager } from '@/mavlink/connection';
 import { HealthBar } from '@/components/HealthBar';
+import { saveAircraftName } from '@/utils/autoBackup';
 
 export function Header() {
   const status = useConnectionStore((s) => s.status);
@@ -16,6 +18,7 @@ export function Header() {
   const firmwareType = useVehicleStore((s) => s.firmwareType);
   const firmwareVersion = useVehicleStore((s) => s.firmwareVersion);
   const armed = useVehicleStore((s) => s.armed);
+  const aircraftName = useVehicleStore((s) => s.aircraftName);
   const battery = useTelemetryStore((s) => s.battery);
   const debugEnabled = useDebugStore((s) => s.enabled);
   const toggleDebug = useDebugStore((s) => s.toggle);
@@ -28,6 +31,21 @@ export function Header() {
   const demoActive = useDemoStore((s) => s.active);
   const startDemo = useDemoStore((s) => s.start);
   const stopDemo = useDemoStore((s) => s.stop);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+
+  const handleStartRename = () => {
+    setNameInput(aircraftName ?? '');
+    setEditingName(true);
+  };
+  const handleSaveRename = async () => {
+    if (nameInput.trim()) {
+      await saveAircraftName(nameInput.trim());
+    }
+    setEditingName(false);
+  };
+  const handleCancelRename = () => setEditingName(false);
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting' || status === 'identifying' || status === 'loading';
@@ -80,6 +98,42 @@ export function Header() {
             </span>
           )}
         </div>
+      )}
+
+      {/* Aircraft name */}
+      {isConnected && aircraftName && (
+        <>
+          <div className="mx-1 h-4 w-px bg-border" />
+          {editingName ? (
+            <div className="flex items-center gap-1">
+              <input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveRename();
+                  if (e.key === 'Escape') handleCancelRename();
+                }}
+                className="h-6 w-40 rounded border border-accent bg-surface-2 px-2 text-sm text-foreground outline-none"
+                autoFocus
+              />
+              <button onClick={handleSaveRename} className="text-success hover:text-success/80">
+                <Check size={13} />
+              </button>
+              <button onClick={handleCancelRename} className="text-subtle hover:text-muted">
+                <X size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleStartRename}
+              className="group flex items-center gap-1.5 rounded px-1.5 py-0.5 text-sm font-semibold text-foreground transition hover:bg-surface-2"
+              title="Click to rename"
+            >
+              {aircraftName}
+              <Pencil size={10} className="text-subtle opacity-0 transition group-hover:opacity-100" />
+            </button>
+          )}
+        </>
       )}
 
       <div className="flex-1" />

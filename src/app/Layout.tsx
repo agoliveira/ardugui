@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useConnectionStore } from '@/store/connectionStore';
 import { useVehicleStore, getVisiblePages } from '@/store/vehicleStore';
 import { useParameterStore } from '@/store/parameterStore';
-import { Loader2, CheckCircle2, Wand2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Wand2, Plane } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Footer } from './Footer';
@@ -35,6 +35,7 @@ import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageHelp } from '@/components/HelpTip';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { saveAircraftName } from '@/utils/autoBackup';
 import { useDebugStore } from '@/store/debugStore';
 
 export type PageId =
@@ -118,6 +119,33 @@ export function Layout() {
   }, [parameters, vehicleType]);
 
   const [showFreshBoardPrompt, setShowFreshBoardPrompt] = useState(false);
+  const [showNamingDialog, setShowNamingDialog] = useState(false);
+  const [namingInput, setNamingInput] = useState('');
+  const isNewAircraft = useVehicleStore((s) => s.isNewAircraft);
+  const aircraftName = useVehicleStore((s) => s.aircraftName);
+
+  // Show naming dialog when a new aircraft is detected
+  useEffect(() => {
+    if (isNewAircraft && aircraftName) {
+      setNamingInput(aircraftName);
+      setShowNamingDialog(true);
+    }
+  }, [isNewAircraft, aircraftName]);
+
+  const handleSaveNaming = async () => {
+    if (namingInput.trim()) {
+      await saveAircraftName(namingInput.trim());
+    }
+    setShowNamingDialog(false);
+  };
+
+  const handleSkipNaming = async () => {
+    // Save with the auto-generated name
+    if (aircraftName) {
+      await saveAircraftName(aircraftName);
+    }
+    setShowNamingDialog(false);
+  };
 
   useEffect(() => {
     const wasConnected =
@@ -414,6 +442,52 @@ export function Layout() {
         </main>
       </div>
       <Footer />
+
+      {/* Name your aircraft dialog -- shown on first connect with a new board */}
+      {showNamingDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm rounded border border-accent/40 bg-surface-1 p-6 shadow-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+                <Plane size={20} className="text-accent" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Name This Aircraft</h3>
+                <p className="text-xs text-muted">
+                  Give your aircraft a name so you can identify it later.
+                </p>
+              </div>
+            </div>
+
+            <input
+              value={namingInput}
+              onChange={(e) => setNamingInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNaming(); }}
+              className="w-full rounded border border-border bg-surface-2 px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+              placeholder="e.g. iFlight Razor 5 inch"
+              autoFocus
+            />
+
+            <p className="mt-2 text-xs text-subtle">
+              You can rename it anytime by clicking the name in the header bar.
+            </p>
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button onClick={handleSkipNaming} className="btn btn-ghost text-xs">
+                Use Default
+              </button>
+              <button
+                onClick={handleSaveNaming}
+                disabled={!namingInput.trim()}
+                className="btn btn-primary text-xs"
+              >
+                Save Name
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Board detected -- wizard prompt */}
       {showFreshBoardPrompt && (

@@ -8,6 +8,7 @@
 
 import { useParameterStore } from '../store/parameterStore';
 import { useVehicleStore } from '../store/vehicleStore';
+import { getBoardById } from '../models/boardRegistry';
 
 const PREF_AUTO_BACKUP = 'auto_backup_on_connect';
 
@@ -26,11 +27,16 @@ export function getAircraftId(): string | null {
 
 /**
  * Build a human-readable aircraft name for first-time registration.
+ * Tries to include board name for specificity.
  */
 export function getAircraftName(): string {
-  const { type, firmwareVersion } = useVehicleStore.getState();
+  const { type, firmwareVersion, boardId } = useVehicleStore.getState();
   const parts: string[] = [];
   if (type) parts.push(type.charAt(0).toUpperCase() + type.slice(1));
+  if (boardId) {
+    const board = getBoardById(boardId);
+    if (board?.name) parts.push(`(${board.name})`);
+  }
   if (firmwareVersion) parts.push(`v${firmwareVersion}`);
   return parts.length > 0 ? parts.join(' ') : 'Unknown Aircraft';
 }
@@ -124,5 +130,54 @@ export async function createManualSnapshot(label: string): Promise<boolean> {
 
   await api.createSnapshot(aircraftId, label, 'manual', params);
   console.log(`[Backup] Manual snapshot "${label}" with ${params.length} params`);
+  return true;
+}
+
+/**
+ * Identify the connected aircraft. Checks the DB for an existing record.
+ * If found, loads the saved name. If not, flags as new aircraft so the
+ * UI can prompt for a name.
+ */
+export async function identifyAircraft(): Promise<void> {
+  const api = window.electronAPI?.db;
+  if (!api) return;
+
+  const aircraftId = getAircraftId();
+  if (!aircraftId) return;
+
+  const store = useVehicleStore.getState();
+  const existing = await api.getAircraft(aircraftId);
+
+  if (existing) {
+    store.setAircraftName(existing.name);
+    store.setIsNewAircraft(false);
+  } else {
+    // New aircraft -- set a default name, flag for naming prompt
+    store.setAircraftName(getAircraftName());
+    store.setIsNewAircraft(true);
+  }
+}
+
+/**
+ * Save a user-chosen aircraft name to the DB and update the store.
+ */
+export async function saveAircraftName(name: string): Promise<boolean> {
+  const api = window.electronAPI?.db;
+  if (!api) return false;
+
+  const aircraftId = getAircraftId();
+  if (!aircraftId) return false;
+
+  const { type, firmwareVersion } = useVehicleStore.getState();
+
+  await api.upsertAircraft({
+    id: aircraftId,
+    name,
+    vehicle_type: type ?? undefined,
+    firmware_version: firmwareVersion ?? undefined,
+  });
+
+  useVehicleStore.getState().setAircraftName(name);
+  useVehicleStore.getState().setIsNewAircraft(false);
   return true;
 }

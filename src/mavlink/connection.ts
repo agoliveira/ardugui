@@ -866,9 +866,19 @@ export class ConnectionManager {
       await delay(200);
       await this.requestAutopilotVersion();
       await delay(500);
+      await this.identifyConnectedAircraft();
       await this.maybeAutoBackup();
     } catch (err) {
       console.warn('Post-connect tasks error:', err);
+    }
+  }
+
+  private async identifyConnectedAircraft() {
+    try {
+      const { identifyAircraft } = await import('../utils/autoBackup');
+      await identifyAircraft();
+    } catch (err) {
+      console.warn('Aircraft identification failed:', err);
     }
   }
 

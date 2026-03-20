@@ -12,6 +12,10 @@ export interface VehicleState {
   apjBoardId: number | null;
   /** Current ArduPilot custom mode number from heartbeat */
   flightMode: number | null;
+  /** User-assigned aircraft name (loaded from DB) */
+  aircraftName: string | null;
+  /** True when this board ID was not found in the DB (first connect) */
+  isNewAircraft: boolean;
 
   // Actions
   setVehicle: (type: VehicleType, firmwareType: string | null) => void;
@@ -20,6 +24,8 @@ export interface VehicleState {
   setBoardId: (boardId: string | null) => void;
   setApjBoardId: (id: number | null) => void;
   setFlightMode: (mode: number) => void;
+  setAircraftName: (name: string) => void;
+  setIsNewAircraft: (isNew: boolean) => void;
   reset: () => void;
 }
 
@@ -31,6 +37,8 @@ export const useVehicleStore = create<VehicleState>((set) => ({
   boardId: null,
   apjBoardId: null,
   flightMode: null,
+  aircraftName: null,
+  isNewAircraft: false,
 
   setVehicle: (type, firmwareType) => set({ type, firmwareType }),
   setFirmwareVersion: (firmwareVersion) => set({ firmwareVersion }),
@@ -38,6 +46,8 @@ export const useVehicleStore = create<VehicleState>((set) => ({
   setBoardId: (boardId) => set({ boardId }),
   setApjBoardId: (apjBoardId) => set({ apjBoardId }),
   setFlightMode: (flightMode) => set({ flightMode }),
+  setAircraftName: (aircraftName) => set({ aircraftName }),
+  setIsNewAircraft: (isNewAircraft) => set({ isNewAircraft }),
   reset: () =>
     set({
       type: null,
@@ -47,6 +57,8 @@ export const useVehicleStore = create<VehicleState>((set) => ({
       boardId: null,
       apjBoardId: null,
       flightMode: null,
+      aircraftName: null,
+      isNewAircraft: false,
     }),
 }));
 
