@@ -10,9 +10,19 @@ import { connectionManager } from '@/mavlink/connection';
 import { detectBoard, getBoardById } from '@/models/boardRegistry';
 import { BoardDiagram } from '@/components/BoardDiagram';
 import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
+import { InavMigrationFlow } from './InavMigrationFlow';
 import type { PortInfo } from '@/store/connectionStore';
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
+
+/** Check if a port is running INAV or Betaflight based on USB descriptor */
+function isInavPort(port: PortInfo | undefined): boolean {
+  if (!port) return false;
+  const m = (port.manufacturer ?? '').toLowerCase();
+  const pnp = (port.pnpId ?? '').toLowerCase();
+  return m.includes('inav') || m.includes('betaflight') ||
+         pnp.includes('inav') || pnp.includes('betaflight');
+}
 
 export function SetupPage() {
   const status = useConnectionStore((s) => s.status);
@@ -33,6 +43,8 @@ export function SetupPage() {
   const paramCount = useParameterStore((s) => s.parameters.size);
 
   const [scanning, setScanning] = useState(false);
+  const [showMigration, setShowMigration] = useState(false);
+  const [migrationPort, setMigrationPort] = useState<PortInfo | null>(null);
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting' || status === 'identifying' || status === 'loading';
@@ -106,6 +118,14 @@ export function SetupPage() {
     if (!portPath) return;
     const selectedPort = availablePorts.find((p) => p.path === portPath);
     console.log('Selected port info:', JSON.stringify(selectedPort));
+
+    // Intercept INAV/Betaflight boards -- show migration flow instead of MAVLink
+    if (isInavPort(selectedPort)) {
+      setMigrationPort(selectedPort ?? null);
+      setShowMigration(true);
+      return;
+    }
+
     if (selectedPort) {
       const board = detectBoard(selectedPort.vendorId, selectedPort.productId, selectedPort.manufacturer, selectedPort.pnpId);
       console.log('Detected board:', board?.id || 'none');
@@ -114,7 +134,38 @@ export function SetupPage() {
     await connectionManager.connect(portPath, baudRate);
   };
 
+  const handleMigrationComplete = (config: { diffAll: string } | null) => {
+    setShowMigration(false);
+    setMigrationPort(null);
+    if (config?.diffAll) {
+      // Store diff and auto-import flag so the wizard picks it up automatically
+      try {
+        sessionStorage.setItem('ardugui-inav-diff', config.diffAll);
+        sessionStorage.setItem('ardugui-inav-auto-import', '1');
+      } catch { /* ignore */ }
+    }
+    // Connection is now established (ArduPilot), normal flow continues
+  };
+
+  const handleMigrationCancel = () => {
+    setShowMigration(false);
+    setMigrationPort(null);
+  };
+
   const handleDisconnect = async () => { await connectionManager.disconnect(); };
+
+  // ── INAV MIGRATION FLOW ──────────────────────────────────────────────────
+  if (showMigration && migrationPort) {
+    return (
+      <InavMigrationFlow
+        portPath={migrationPort.path}
+        baudRate={baudRate}
+        portManufacturer={migrationPort.manufacturer ?? 'INAV'}
+        onComplete={handleMigrationComplete}
+        onCancel={handleMigrationCancel}
+      />
+    );
+  }
 
   // ── DISCONNECTED STATE ──────────────────────────────────────────────────
   if (!isConnected && !isConnecting) {

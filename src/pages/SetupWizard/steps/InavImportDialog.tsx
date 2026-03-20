@@ -58,7 +58,17 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
   const batteryVoltage = useTelemetryStore((s) => s.battery?.voltage ?? 0);
 
   const [phase, setPhase] = useState<Phase>('input');
-  const [rawText, setRawText] = useState('');
+  const [rawText, setRawText] = useState(() => {
+    // Auto-load config from migration flow if available
+    try {
+      const saved = sessionStorage.getItem('ardugui-inav-diff');
+      if (saved) {
+        sessionStorage.removeItem('ardugui-inav-diff');
+        return saved;
+      }
+    } catch { /* ignore */ }
+    return '';
+  });
   const [cellCount, setCellCount] = useState(0); // 0 = auto from config
   const [parseError, setParseError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);

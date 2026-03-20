@@ -57,6 +57,23 @@ export function SetupWizard() {
   const [showInavImport, setShowInavImport] = useState(false);
   const [showVehicleChoice, setShowVehicleChoice] = useState(false);
 
+  // Auto-trigger INAV import when migration flow saved a config
+  const didAutoImport = useRef(false);
+  useEffect(() => {
+    if (didAutoImport.current) return;
+    try {
+      const autoFlag = sessionStorage.getItem('ardugui-inav-auto-import');
+      const hasDump = sessionStorage.getItem('ardugui-inav-dump');
+      if (autoFlag && hasDump) {
+        didAutoImport.current = true;
+        sessionStorage.removeItem('ardugui-inav-auto-import');
+        // Skip welcome, open import dialog directly
+        setShowWelcome(false);
+        setShowInavImport(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // Factory reset state
   const [resetPhase, setResetPhase] = useState<ResetPhase>(null);
   const [resetError, setResetError] = useState<string | null>(null);
@@ -420,7 +437,7 @@ export function SetupWizard() {
                           <p className="text-base font-bold text-foreground">Import from INAV</p>
                           <p className="mt-1 text-xs text-muted leading-relaxed">
                             Migrating from INAV? Paste your
-                            <span className="font-mono text-foreground"> diff all </span>
+                            <span className="font-mono text-foreground"> dump all </span>
                             to pre-fill the wizard with your existing config.
                           </p>
                         </div>
