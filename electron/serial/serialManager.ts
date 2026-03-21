@@ -180,25 +180,32 @@ export class SerialManager {
     }
 
     return new Promise((resolve, reject) => {
-      this.port!.write(Buffer.from(data), (err) => {
-        if (err) {
-          reject(new Error(`Write failed: ${err.message}`));
-          return;
-        }
-        // Port may have closed between write() and this callback
-        if (!this.port || !this.port.isOpen) {
-          resolve();
-          return;
-        }
-        this.port.drain((drainErr) => {
-          if (drainErr) {
-            // Port may have closed during drain -- not fatal
+      try {
+        this.port!.write(Buffer.from(data), (err) => {
+          if (err) {
+            reject(new Error(`Write failed: ${err.message}`));
+            return;
+          }
+          // Port may have closed between write() and this callback
+          if (!this.port || !this.port.isOpen) {
             resolve();
             return;
           }
-          resolve();
+          try {
+            this.port.drain((drainErr) => {
+              // Drain errors are non-fatal (port may have closed during drain)
+              resolve();
+            });
+          } catch {
+            // drain() itself can throw ENODEV synchronously if device vanished
+            resolve();
+          }
         });
-      });
+      } catch {
+        // port.write() can throw synchronously (ENODEV) when USB is yanked
+        // between the isOpen check and the write call. Not fatal.
+        resolve();
+      }
     });
   }
 

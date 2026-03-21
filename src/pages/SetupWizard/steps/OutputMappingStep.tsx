@@ -9,7 +9,7 @@
  * correct output assignments.
  */
 
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import {
   Check,
   AlertTriangle,
@@ -278,6 +278,20 @@ export function OutputMappingStep({ onCanAdvanceChange }: OutputMappingStepProps
     }
     setWriting(false);
   }, [outputs, stagedParams, vehicleType]);
+
+  // ── Auto-write for INAV import ──────────────────────────────────
+  // When the mapping comes from an INAV import and the user hasn't customized
+  // anything, auto-write to the FC on mount. This avoids a redundant manual
+  // "Write Mapping" click when the import already has the correct mapping.
+  const didAutoWrite = useRef(false);
+  useEffect(() => {
+    if (didAutoWrite.current) return;
+    if (importSource !== 'inav') return;
+    if (customizing || written || writing) return;
+    if (activeOutputs.length === 0) return;
+    didAutoWrite.current = true;
+    handleWriteToFC();
+  }, [importSource, customizing, written, writing, activeOutputs.length, handleWriteToFC]);
 
   // ── Advance gate ───────────────────────────────────────────────
 

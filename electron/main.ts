@@ -8,6 +8,37 @@ import { registerDbHandlers } from './db/dbBridge';
 let mainWindow: BrowserWindow | null = null;
 
 /* ------------------------------------------------------------------ */
+/*  Global error safety nets                                            */
+/* ------------------------------------------------------------------ */
+
+// Prevent ENODEV and other serial errors from crashing the app when
+// USB cables are yanked unexpectedly. These are non-fatal and the
+// renderer-side reconnection logic handles recovery.
+process.on('uncaughtException', (err) => {
+  const msg = err?.message ?? '';
+  if (msg.includes('ENODEV') || msg.includes('no such device') ||
+      msg.includes('ENXIO') || msg.includes('EIO') ||
+      msg.includes('port is not open') || msg.includes('Writing to COM')) {
+    console.warn('[main] Suppressed serial error:', msg);
+    return; // Swallow serial-related crashes
+  }
+  // Re-throw non-serial errors so they still surface
+  console.error('[main] Uncaught exception:', err);
+  // Show dialog so the user sees it instead of silent crash
+  dialog.showErrorBox('Error', `An unexpected error occurred:\n${msg}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const msg = String(reason);
+  if (msg.includes('ENODEV') || msg.includes('no such device') ||
+      msg.includes('ENXIO') || msg.includes('EIO')) {
+    console.warn('[main] Suppressed serial rejection:', msg);
+    return;
+  }
+  console.error('[main] Unhandled rejection:', reason);
+});
+
+/* ------------------------------------------------------------------ */
 /*  Window bounds persistence                                          */
 /* ------------------------------------------------------------------ */
 
