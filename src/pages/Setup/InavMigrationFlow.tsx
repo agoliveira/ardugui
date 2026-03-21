@@ -47,6 +47,8 @@ export function InavMigrationFlow({
   const [hexUrl, setHexUrl] = useState<string | null>(null);
   const [hexSaved, setHexSaved] = useState(false);
   const [vehicleType, setVehicleType] = useState<'copter' | 'plane'>('copter');
+  /** True when vehicle type was auto-detected from INAV config (not user-chosen) */
+  const [autoDetectedType, setAutoDetectedType] = useState(false);
 
   const cliRef = useRef<InavCli | null>(null);
 
@@ -91,10 +93,25 @@ export function InavMigrationFlow({
         }
 
         // Auto-detect vehicle type from INAV config
-        if (config.platformType === 'AIRPLANE' || config.modelPreviewType === 14 ||
-            config.mixer?.includes('FLYING_WING') || config.mixer?.includes('AIRPLANE')) {
+        // Use platform_type and mixer as reliable indicators. motor/servo count
+        // from mmix/smix lines is also reliable. model_preview_type is NOT used
+        // (it's a configurator preset ID, not a frame type).
+        if (config.platformType === 'AIRPLANE' ||
+            config.mixer?.includes('FLYING_WING') || config.mixer?.includes('AIRPLANE') ||
+            (config.motorCount === 1 && config.servoCount > 0)) {
           detectedType = 'plane';
           setVehicleType('plane');
+          setAutoDetectedType(true);
+        } else if (config.platformType || config.mixer || config.motorCount > 0) {
+          // Detected as copter (not just default)
+          setAutoDetectedType(true);
+        }
+
+        // Pre-store craft name so it's available when the board reconnects
+        // as ArduPilot (identifyAircraft fires before handleMigrationComplete)
+        const craftName = config.craftName ?? config.settings.get('name');
+        if (craftName) {
+          try { sessionStorage.setItem('ardugui-inav-craft-name', craftName); } catch { /* ignore */ }
         }
       }
 
@@ -111,8 +128,12 @@ export function InavMigrationFlow({
         }
       }
 
-      // Close CLI gracefully (don't reboot -- user still needs the board accessible)
-      setProgress('Done');
+      // Exit CLI mode (sends "exit" which reboots the FC back to normal operation).
+      // Without this, the FC stays in CLI mode and INAV Configurator can't connect.
+      setProgress('Rebooting board...');
+      await cli.exitCli();
+      // Give the FC a moment to start rebooting before we close the port
+      await new Promise((r) => setTimeout(r, 500));
       await cli.close();
 
       setStep('firmware');
@@ -292,7 +313,10 @@ export function InavMigrationFlow({
               <p className="text-base font-semibold text-foreground">
                 {migrateWithConfig ? 'Extracting INAV Configuration' : 'Reading Board Info'}
               </p>
-              <p className="mt-2 text-sm text-muted">{progress}</p>
+              <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted">
+                <Loader2 size={14} className="animate-spin text-accent" />
+                <span>{progress}</span>
+              </div>
             </div>
             {error && (
               <div className="w-full rounded border border-danger/40 bg-danger/5 px-4 py-3 text-sm text-danger">
@@ -314,7 +338,15 @@ export function InavMigrationFlow({
           {/* Board info card */}
           <div className="card p-5">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted mb-3">Board Detected</h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+
+            {/* Aircraft name -- prominent if available */}
+            {migrateWithConfig && inavConfig && (inavConfig.craftName ?? inavConfig.settings.get('name')) && (
+              <p className="mb-3 text-lg font-bold text-accent">
+                {inavConfig.craftName ?? inavConfig.settings.get('name')}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               <div>
                 <span className="text-xs text-subtle">INAV Target</span>
                 <p className="font-mono font-bold text-foreground">{inavInfo?.boardTarget ?? 'Unknown'}</p>
@@ -367,19 +399,34 @@ export function InavMigrationFlow({
             <>
               <div className="card p-5">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted mb-3">Firmware</h3>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-sm text-muted">Vehicle type:</span>
-                  <button onClick={() => handleVehicleTypeChange('copter')}
-                    className={`rounded px-3 py-1.5 text-xs font-bold transition ${
-                      vehicleType === 'copter'
-                        ? 'bg-accent text-black' : 'bg-surface-2 text-muted hover:bg-surface-3'
-                    }`}>Copter</button>
-                  <button onClick={() => handleVehicleTypeChange('plane')}
-                    className={`rounded px-3 py-1.5 text-xs font-bold transition ${
-                      vehicleType === 'plane'
-                        ? 'bg-accent text-black' : 'bg-surface-2 text-muted hover:bg-surface-3'
-                    }`}>Plane</button>
-                </div>
+                {autoDetectedType ? (
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-sm text-muted">Detected:</span>
+                    <span className="rounded bg-accent/20 px-3 py-1.5 text-xs font-bold text-accent">
+                      {vehicleType === 'copter' ? 'Copter' : 'Plane'}
+                    </span>
+                    <button
+                      onClick={() => { handleVehicleTypeChange(vehicleType === 'copter' ? 'plane' : 'copter'); setAutoDetectedType(false); }}
+                      className="text-xs text-subtle hover:text-muted transition"
+                    >
+                      Wrong? Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-sm text-muted">Vehicle type:</span>
+                    <button onClick={() => handleVehicleTypeChange('copter')}
+                      className={`rounded px-3 py-1.5 text-xs font-bold transition ${
+                        vehicleType === 'copter'
+                          ? 'bg-accent text-black' : 'bg-surface-2 text-muted hover:bg-surface-3'
+                      }`}>Copter</button>
+                    <button onClick={() => handleVehicleTypeChange('plane')}
+                      className={`rounded px-3 py-1.5 text-xs font-bold transition ${
+                        vehicleType === 'plane'
+                          ? 'bg-accent text-black' : 'bg-surface-2 text-muted hover:bg-surface-3'
+                      }`}>Plane</button>
+                  </div>
+                )}
 
                 {hexUrl && (
                   <div className="space-y-3">
@@ -469,6 +516,10 @@ export function InavMigrationFlow({
                 </p>
                 <p><span className="inline-flex h-5 w-5 items-center justify-center rounded bg-accent/20 text-xs font-bold text-accent mr-2">5</span>
                   Wait for the flash to complete. The board will reboot into ArduPilot automatically.
+                </p>
+                <p><span className="inline-flex h-5 w-5 items-center justify-center rounded bg-accent/20 text-xs font-bold text-accent mr-2">6</span>
+                  <span className="font-semibold text-foreground">Disconnect and reconnect the USB cable.</span> Some boards
+                  (especially F4-based) need a power cycle to boot into the new firmware cleanly.
                 </p>
               </div>
             </div>

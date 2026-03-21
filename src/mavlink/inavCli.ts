@@ -101,10 +101,17 @@ export class InavCli {
    * Unlike waitFor(), this distinguishes the real prompt from comment
    * lines that also contain '# ' (e.g. '# version', '# INAV/BOARD...').
    * The real prompt appears on its own line at the buffer tail with no
-   * text following it. We require 300ms of silence after detecting the
+   * text following it. We require a silence period after detecting the
    * pattern to confirm the FC has finished sending data.
+   *
+   * @param timeoutMs  Overall timeout
+   * @param settleMs   Silence duration to confirm prompt is real (default 1500ms).
+   *                   Serial data arrives in chunks with gaps between lines.
+   *                   300ms is too short -- F4 boards can pause 500ms+ between chunks.
+   * @param minSize    Minimum buffer size before prompt is considered real.
+   *                   Prevents early resolution on comment-only headers.
    */
-  private waitForPrompt(timeoutMs: number = 5000): Promise<string> {
+  private waitForPrompt(timeoutMs: number = 5000, settleMs: number = 1500, minSize: number = 0): Promise<string> {
     return new Promise((resolve, reject) => {
       let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -121,7 +128,7 @@ export class InavCli {
       const check = () => {
         // The CLI prompt is '# ' on its own line at the end of the buffer.
         // Match: newline (or start of buffer) followed by '# ' at the very end.
-        if (/(\r?\n|^)# $/.test(this.buffer)) {
+        if (/(\r?\n|^)# $/.test(this.buffer) && this.buffer.length >= minSize) {
           // Looks like a prompt -- wait for silence to confirm it's real
           // (not a partially-received comment line like '# vers' before 'ion\r\n')
           if (settleTimer) clearTimeout(settleTimer);
@@ -129,7 +136,7 @@ export class InavCli {
             clearTimeout(timer);
             this.resolveWaiter = null;
             resolve(this.buffer);
-          }, 300);
+          }, settleMs);
         } else {
           // More data arrived after the '# ' -- it was a comment, not a prompt
           if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
@@ -141,6 +148,37 @@ export class InavCli {
 
       // Re-check on each new data arrival
       this.resolveWaiter = () => check();
+    });
+  }
+
+  /**
+   * Wait until a line matching exactly the given text appears in the buffer.
+   * Unlike waitFor() which uses substring includes(), this checks for the
+   * text as a complete line (anchored by newlines) to avoid false matches
+   * on comments like "# save configuration" when looking for "save".
+   */
+  private waitForLine(lineText: string, timeoutMs: number = 5000): Promise<string> {
+    // Match: start-of-buffer or newline, then the exact text, then \r\n or \n
+    const pattern = new RegExp(`(^|\\r?\\n)${lineText}\\r?\\n`);
+
+    return new Promise((resolve, reject) => {
+      if (pattern.test(this.buffer)) {
+        resolve(this.buffer);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        this.resolveWaiter = null;
+        reject(new Error(`Timeout waiting for line "${lineText}" after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      this.resolveWaiter = (buf: string) => {
+        if (pattern.test(buf)) {
+          clearTimeout(timer);
+          this.resolveWaiter = null;
+          resolve(buf);
+        }
+      };
     });
   }
 
@@ -198,23 +236,41 @@ export class InavCli {
 
   /**
    * Extract "dump all" output from INAV CLI.
-   * This is the main config extraction function. Uses "dump all" instead of
-   * "diff all" to capture every parameter including defaults, giving the
-   * import parser the full picture.
+   * Captures every parameter including defaults, giving the import parser
+   * the full picture. Produces ~30-50KB of output.
+   *
+   * INAV dump output ends with:
+   *   save
+   *   # end the command batch
+   *   batch end
+   *   #
+   *
+   * We use "batch end" as the deterministic end marker. This avoids the
+   * prompt-detection problem where "# " in comment lines causes early
+   * resolution. Settle-based prompt detection is the fallback if the
+   * marker never arrives (e.g. older INAV without batch mode).
    */
   async extractDumpAll(onProgress?: ProgressCallback): Promise<string> {
     onProgress?.('Extracting full configuration...');
     this.clearBuffer();
     await this.send('dump all\r\n');
 
-    // dump all output contains '# ' comment lines that look like the prompt.
-    // waitForPrompt uses settle-based detection to find the real trailing prompt.
-    await this.waitForPrompt(60000);
+    // Primary: wait for "batch end" -- the last line INAV emits after a dump
+    try {
+      await this.waitForLine('batch end', 60000);
+      // Let the trailing prompt arrive
+      await new Promise((r) => setTimeout(r, 300));
+    } catch {
+      // Fallback for older INAV without batch mode
+      onProgress?.('Waiting for CLI prompt...');
+      await this.waitForPrompt(10000, 2000, 1000);
+    }
 
     const output = this.buffer;
 
-    // Extract just the dump output
-    const dumpIdx = output.indexOf('dump all');
+    // Extract output: starts at "dump" (echo may be "dump" or "dump all"),
+    // ends before the final "# " prompt
+    const dumpIdx = output.indexOf('dump');
     const promptIdx = output.lastIndexOf('# ');
     if (dumpIdx >= 0 && promptIdx > dumpIdx) {
       const dumpText = output.substring(dumpIdx, promptIdx).trim();
@@ -239,14 +295,26 @@ export class InavCli {
       buildDate: null,
     };
 
-    // Parse version: "INAV/7.1.0 (board) ..."
-    const versionMatch = output.match(/INAV[/\s](\d+\.\d+\.\d+)/i);
+    // Parse version: "INAV/MATEKF405SE 9.0.1 Feb 13 2026 ..."
+    // Older format: "INAV/7.1.0 ..." (version right after slash)
+    // Newer format: "INAV/BOARDNAME VERSION ..." (board name between slash and version)
+    const versionMatch = output.match(/INAV\/\S+\s+(\d+\.\d+\.\d+)/i)
+      ?? output.match(/INAV[/\s](\d+\.\d+\.\d+)/i);
     if (versionMatch) info.version = versionMatch[1];
 
-    // Parse board target: varies by INAV version
-    const boardMatch = output.match(/(?:board|target)[:\s]+(\S+)/i)
-      ?? output.match(/INAV\/\d+\.\d+\.\d+\s+(\S+)/);
-    if (boardMatch) info.boardTarget = boardMatch[1];
+    // Parse board target: "INAV/MATEKF405SE ..."
+    const boardMatch = output.match(/INAV\/(\S+)/i);
+    if (boardMatch) {
+      // Board name may include version if old format -- strip trailing digits
+      const raw = boardMatch[1];
+      const cleaned = raw.replace(/^\d+\.\d+\.\d+.*/, ''); // old format: version was board name
+      info.boardTarget = cleaned || null;
+    }
+    // Fallback: look for "board" or "target" keywords
+    if (!info.boardTarget) {
+      const kwMatch = output.match(/(?:board|target)[:\s]+(\S+)/i);
+      if (kwMatch) info.boardTarget = kwMatch[1];
+    }
 
     // Parse build date
     const dateMatch = output.match(/(?:Build|Date)[:\s]+(.+?)(?:\r?\n|$)/i);

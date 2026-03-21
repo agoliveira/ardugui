@@ -161,7 +161,7 @@ export function InavImportDialog({ onClose, onImported }: InavImportDialogProps)
       const config = parseInavDiff(rawText);
 
       // Sanity check: parser found something useful
-      if (!config.mixer && !config.modelPreviewType && config.settings.size === 0
+      if (!config.mixer && !config.platformType && config.settings.size === 0
           && config.serialPorts.size === 0 && config.motorCount === 0) {
         setParseError(
           'The file was recognized as INAV format but no usable configuration was found. ' +

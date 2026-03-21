@@ -11,6 +11,7 @@ import { detectBoard, getBoardById } from '@/models/boardRegistry';
 import { BoardDiagram } from '@/components/BoardDiagram';
 import { useWizardStore } from '@/pages/SetupWizard/wizardStore';
 import { InavMigrationFlow } from './InavMigrationFlow';
+import type { InavConfig } from '@/models/inavImport';
 import type { PortInfo } from '@/store/connectionStore';
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
@@ -134,7 +135,7 @@ export function SetupPage() {
     await connectionManager.connect(portPath, baudRate);
   };
 
-  const handleMigrationComplete = (config: { inavDump: string } | null) => {
+  const handleMigrationComplete = (config: { inavDump: string; inavConfig: InavConfig } | null) => {
     setShowMigration(false);
     setMigrationPort(null);
     if (config?.inavDump) {
@@ -142,6 +143,10 @@ export function SetupPage() {
       try {
         sessionStorage.setItem('ardugui-inav-dump', config.inavDump);
         sessionStorage.setItem('ardugui-inav-auto-import', '1');
+        // Store craft name separately so the wizard prompt can pre-fill it
+        if (config.inavConfig?.craftName) {
+          sessionStorage.setItem('ardugui-inav-craft-name', config.inavConfig.craftName);
+        }
       } catch { /* ignore */ }
     }
     // Connection is now established (ArduPilot), normal flow continues

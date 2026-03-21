@@ -161,8 +161,32 @@ export function parseInavDiff(text: string): InavConfig {
   const lines = text.split('\n');
   const servoIndices = new Set<number>();
 
+  // Track which profile section we're currently parsing.
+  // In a "dump all", INAV outputs ALL profiles sequentially. Profile 2/3
+  // restate defaults that overwrite profile 1's actual config if we use
+  // last-write-wins. We only keep mixer-scoped and battery-scoped data
+  // from profile 1 (the primary profile).
+  let currentMixerProfile = 0;   // 0 = master section (before any profile switch)
+  let currentBatteryProfile = 0;
+
   for (const rawLine of lines) {
     const line = rawLine.trim();
+
+    // ── Profile switch detection ──────────────────────────────────
+    const mixerProfileMatch = line.match(/^mixer_profile\s+(\d+)/i);
+    if (mixerProfileMatch) {
+      currentMixerProfile = parseInt(mixerProfileMatch[1]);
+      continue;
+    }
+    const controlProfileMatch = line.match(/^control_profile\s+(\d+)/i);
+    if (controlProfileMatch) {
+      continue; // We don't use control-profile-scoped data (PIDs/rates)
+    }
+    const batteryProfileMatch = line.match(/^battery_profile\s+(\d+)/i);
+    if (batteryProfileMatch) {
+      currentBatteryProfile = parseInt(batteryProfileMatch[1]);
+      continue;
+    }
 
     // Header: "# INAV/MATEKF405SE 9.0.1 Feb 13 2026 / 06:54:06 (hash)"
     const headerMatch = line.match(/^#\s*INAV\s*\/\s*(\S+)\s+([\d.]+)/i);
@@ -185,7 +209,9 @@ export function parseInavDiff(text: string): InavConfig {
     // Top-level mixer (older INAV style) -- but not "mixer_profile"
     const mixerMatch = line.match(/^mixer\s+(\S+)/i);
     if (mixerMatch && !line.startsWith('mixer_profile')) {
-      config.mixer = mixerMatch[1].toUpperCase();
+      if (currentMixerProfile <= 1) {
+        config.mixer = mixerMatch[1].toUpperCase();
+      }
       continue;
     }
 
@@ -238,9 +264,13 @@ export function parseInavDiff(text: string): InavConfig {
       continue;
     }
 
-    // mmix reset -- clear motor array (VTOL diffs have per-profile mixers)
+    // mmix reset -- clear motor array
+    // Only process from mixer_profile 1 (or master section before any profile switch).
+    // In dump all, profile 2/3 restate "mmix reset" which would clear profile 1's motors.
     if (line === 'mmix reset') {
-      config.motors = [];
+      if (currentMixerProfile <= 1) {
+        config.motors = [];
+      }
       continue;
     }
 
@@ -249,20 +279,24 @@ export function parseInavDiff(text: string): InavConfig {
       /^mmix\s+(\d+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)/i
     );
     if (mmixMatch) {
-      config.motors.push({
-        index: parseInt(mmixMatch[1]),
-        throttle: parseFloat(mmixMatch[2]),
-        roll: parseFloat(mmixMatch[3]),
-        pitch: parseFloat(mmixMatch[4]),
-        yaw: parseFloat(mmixMatch[5]),
-      });
+      if (currentMixerProfile <= 1) {
+        config.motors.push({
+          index: parseInt(mmixMatch[1]),
+          throttle: parseFloat(mmixMatch[2]),
+          roll: parseFloat(mmixMatch[3]),
+          pitch: parseFloat(mmixMatch[4]),
+          yaw: parseFloat(mmixMatch[5]),
+        });
+      }
       continue;
     }
 
     // smix reset -- clear servo mix array
     if (line === 'smix reset') {
-      config.servoMixes = [];
-      servoIndices.clear();
+      if (currentMixerProfile <= 1) {
+        config.servoMixes = [];
+        servoIndices.clear();
+      }
       continue;
     }
 
@@ -271,16 +305,18 @@ export function parseInavDiff(text: string): InavConfig {
       /^smix\s+(\d+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s+(\d+)\s+(-?\d+)/i
     );
     if (smixMatch) {
-      const servoIdx = parseInt(smixMatch[2]);
-      servoIndices.add(servoIdx);
-      config.servoMixes.push({
-        ruleIndex: parseInt(smixMatch[1]),
-        servoIndex: servoIdx,
-        inputSource: parseInt(smixMatch[3]),
-        rate: parseInt(smixMatch[4]),
-        speed: parseInt(smixMatch[5]),
-        conditionId: parseInt(smixMatch[6]),
-      });
+      if (currentMixerProfile <= 1) {
+        const servoIdx = parseInt(smixMatch[2]);
+        servoIndices.add(servoIdx);
+        config.servoMixes.push({
+          ruleIndex: parseInt(smixMatch[1]),
+          servoIndex: servoIdx,
+          inputSource: parseInt(smixMatch[3]),
+          rate: parseInt(smixMatch[4]),
+          speed: parseInt(smixMatch[5]),
+          conditionId: parseInt(smixMatch[6]),
+        });
+      }
       continue;
     }
 
@@ -314,6 +350,22 @@ export function parseInavDiff(text: string): InavConfig {
     if (setMatch) {
       const key = setMatch[1].toLowerCase();
       const val = setMatch[2].trim();
+
+      // Mixer-profile-scoped settings: only keep from profile 1 (or master section)
+      const isMixerScoped = key === 'model_preview_type' || key === 'platform_type'
+        || key === 'has_flaps' || key === 'motorstop_on_low'
+        || key === 'mixer_control_profile_linking';
+      if (isMixerScoped && currentMixerProfile > 1) {
+        continue; // Skip profile 2/3 defaults that would overwrite profile 1
+      }
+
+      // Battery-profile-scoped settings: only keep from profile 1 (or master section)
+      const isBatteryScoped = key === 'bat_cells' || key.startsWith('vbat_')
+        || key.startsWith('battery_capacity') || key.startsWith('limit_');
+      if (isBatteryScoped && currentBatteryProfile > 1) {
+        continue;
+      }
+
       config.settings.set(key, val);
 
       if (key === 'model_preview_type') {
@@ -390,26 +442,6 @@ export interface ImportSkippedItem {
   label: string;
   reason: string;
 }
-
-/* ── Vehicle type detection ─────────────────────────────────────── */
-
-/**
- * INAV model_preview_type values.
- * These correspond to the visual model shown in INAV Configurator.
- */
-const MODEL_TYPE_MAP: Record<number, { vehicleType: 'copter' | 'plane' | 'quadplane'; description: string }> = {
-  1:  { vehicleType: 'copter', description: 'Quad X' },
-  2:  { vehicleType: 'copter', description: 'Quad +' },
-  3:  { vehicleType: 'copter', description: 'Tricopter' },
-  4:  { vehicleType: 'copter', description: 'Hex X' },
-  5:  { vehicleType: 'copter', description: 'Hex +' },
-  6:  { vehicleType: 'copter', description: 'Y6' },
-  7:  { vehicleType: 'plane',  description: 'Airplane' },
-  8:  { vehicleType: 'plane',  description: 'Flying Wing' },
-  9:  { vehicleType: 'copter', description: 'Octo Flat X' },
-  10: { vehicleType: 'copter', description: 'Octo Flat +' },
-  14: { vehicleType: 'plane',  description: 'Airplane' },
-};
 
 /* ── Mixer to frame mapping ─────────────────────────────────────── */
 
@@ -802,20 +834,21 @@ export function mapToArduPilot(
     }
   }
 
-  // Priority: mixer > model_preview_type > motor/servo heuristic > platform_type
+  // Priority for vehicle type detection:
+  //   1. mixer command (old INAV: "mixer QUADX")
+  //   2. Motor/servo heuristic from mmix/smix lines (always reliable when present)
+  //   3. platform_type setting (MULTIROTOR, AIRPLANE, etc.)
+  //
+  // NOTE: model_preview_type is intentionally NOT used for detection.
+  // Per INAV settings.yaml it's "ID of mixer preset applied in a Configurator.
+  // Do not modify manually. Used only for backup/restore reasons." These are
+  // configurator-internal preset IDs, not standardized frame types.
+
   if (config.mixer) {
     const frame = MIXER_MAP[config.mixer];
     if (frame) {
       vehicleType = frame.vehicleType;
       frameDescription = frame.description;
-    }
-  }
-
-  if (!vehicleType && config.modelPreviewType !== null) {
-    const model = MODEL_TYPE_MAP[config.modelPreviewType];
-    if (model) {
-      vehicleType = model.vehicleType;
-      frameDescription = model.description;
     }
   }
 
@@ -826,7 +859,7 @@ export function mapToArduPilot(
       : 'Airplane (from motor/servo mix)';
   }
 
-  if (!vehicleType && config.motorCount > 1 && config.servoCount === 0) {
+  if (!vehicleType && config.motorCount > 1) {
     vehicleType = 'copter';
     frameDescription = `${config.motorCount}-motor copter (from motor mix)`;
   }
@@ -835,12 +868,19 @@ export function mapToArduPilot(
     if (config.platformType === 'AIRPLANE' || config.platformType === 'FLYING_WING') {
       vehicleType = 'plane';
       frameDescription = config.platformType === 'FLYING_WING' ? 'Flying Wing' : 'Airplane';
+    } else if (config.platformType === 'TRICOPTER') {
+      vehicleType = 'copter';
+      frameDescription = 'Tricopter (from platform_type)';
     } else {
       vehicleType = 'copter';
     }
   }
 
   // ── Frame params (copters only) ──────────────────────────────────
+  //
+  // Priority for FRAME_CLASS/TYPE:
+  //   1. MIXER_MAP from standalone mixer command (old INAV)
+  //   2. Motor count from mmix lines (reliable in INAV 9.x+)
 
   if (vehicleType === 'copter' && config.mixer) {
     const frame = MIXER_MAP[config.mixer];
@@ -857,30 +897,28 @@ export function mapToArduPilot(
     }
   }
 
-  // Fallback: INAV 9.x+ uses model_preview_type inside mixer_profile
-  // instead of a standalone 'mixer QUADX' command. Map to FRAME_CLASS/TYPE
-  // so FrameStep can auto-select the correct preset.
-  if (vehicleType === 'copter' && !params['FRAME_CLASS'] && config.modelPreviewType !== null) {
-    const previewToFrame: Record<number, { cls: number; type: number; name: string }> = {
-      1:  { cls: 1,  type: 1, name: 'Quad X' },
-      2:  { cls: 1,  type: 0, name: 'Quad +' },
-      3:  { cls: 7,  type: 0, name: 'Tricopter' },
-      4:  { cls: 2,  type: 1, name: 'Hex X' },
-      5:  { cls: 2,  type: 0, name: 'Hex +' },
-      6:  { cls: 14, type: 0, name: 'Y6' },
-      9:  { cls: 4,  type: 1, name: 'Octo Flat X' },
-      10: { cls: 4,  type: 0, name: 'Octo Flat +' },
+  // Motor count fallback: derive FRAME_CLASS from the number of mmix entries.
+  // Default to X layout (FRAME_TYPE=1) since it's the most common. The user
+  // can correct the layout variant (X vs + vs H) in the Frame step.
+  if (vehicleType === 'copter' && !params['FRAME_CLASS'] && config.motorCount > 0) {
+    const motorCountToFrame: Record<number, { cls: number; name: string }> = {
+      3: { cls: 7,  name: 'Tricopter' },
+      4: { cls: 1,  name: 'Quad' },
+      6: { cls: 2,  name: 'Hex' },
+      8: { cls: 4,  name: 'Octo' },
     };
-    const pf = previewToFrame[config.modelPreviewType];
-    if (pf) {
-      params['FRAME_CLASS'] = pf.cls;
-      params['FRAME_TYPE'] = pf.type;
+    const mf = motorCountToFrame[config.motorCount];
+    if (mf) {
+      // Tricopter has only one layout variant (FRAME_TYPE=0)
+      const frameType = mf.cls === 7 ? 0 : 1;
+      params['FRAME_CLASS'] = mf.cls;
+      params['FRAME_TYPE'] = frameType;
       summary.push({
         category: 'Frame',
         label: 'Frame type',
-        inavValue: `model_preview_type ${config.modelPreviewType} (${pf.name})`,
+        inavValue: `${config.motorCount} motors (from motor mixer)`,
         arduPilotParam: 'FRAME_CLASS + FRAME_TYPE',
-        arduPilotValue: `${pf.cls} / ${pf.type}`,
+        arduPilotValue: `${mf.cls} / ${frameType} (${mf.name}${frameType ? ' X' : ''})`,
       });
     }
   }
@@ -1201,13 +1239,17 @@ export function mapToArduPilot(
 
   // ── Craft name ──────────────────────────────────────────────────
 
-  if (config.craftName) {
+  // INAV stores the name two ways depending on version:
+  //   Standalone: "name My Racing Quad" (parsed into config.craftName)
+  //   Setting:    "set name = My Racing Quad" (parsed into config.settings)
+  const resolvedCraftName = config.craftName ?? config.settings.get('name') ?? null;
+  if (resolvedCraftName) {
     summary.push({
       category: 'General',
       label: 'Craft name',
-      inavValue: config.craftName,
+      inavValue: resolvedCraftName,
       arduPilotParam: '(info)',
-      arduPilotValue: `"${config.craftName}" -- will be used as the aircraft name`,
+      arduPilotValue: `"${resolvedCraftName}" -- will be used as the aircraft name`,
     });
   }
 
@@ -1366,12 +1408,23 @@ export function mapToArduPilot(
 
   // ── Flight modes from AUX ────────────────────────────────────────
 
+  // Check if INAV had any real aux modes configured (not just disabled 900-900 entries)
+  const hasRealAuxModes = config.auxModes.some(
+    (a) => a.modeId !== 0 && a.rangeStart !== a.rangeEnd
+  );
   const detectedModes = detectInavFlightModes(config.auxModes, vehicleType);
   if (detectedModes.length > 0) {
     for (let i = 0; i < Math.min(detectedModes.length, 6); i++) {
       params[`FLTMODE${i + 1}`] = detectedModes[i].arduPilotMode;
     }
-    summary.push({ category: 'Flight Modes', label: 'Modes from AUX', inavValue: detectedModes.map((m) => m.name).join(', '), arduPilotParam: 'FLTMODE1-6', arduPilotValue: detectedModes.length });
+    const modeNames = [...new Set(detectedModes.map((m) => m.name))].join(', ');
+    summary.push({
+      category: 'Flight Modes',
+      label: hasRealAuxModes ? 'Modes from AUX' : 'Default modes (no INAV modes configured)',
+      inavValue: hasRealAuxModes ? modeNames : '(none)',
+      arduPilotParam: 'FLTMODE1-6',
+      arduPilotValue: modeNames,
+    });
   }
 
   // ── Motor and servo output mapping ────────────────────────────────
@@ -1616,7 +1669,7 @@ export function mapToArduPilot(
     hasFlaps: config.hasFlaps,
   };
 
-  return { params, detected, summary, skipped, vehicleType, frameDescription, cellCount: effectiveCells, craftName: config.craftName };
+  return { params, detected, summary, skipped, vehicleType, frameDescription, cellCount: effectiveCells, craftName: resolvedCraftName };
 }
 
 /* ================================================================== */
@@ -1638,6 +1691,8 @@ function detectInavFlightModes(
 
   for (const aux of auxModes) {
     if (aux.modeId === 0) continue;
+    // Skip disabled entries (range 900-900 in dump all)
+    if (aux.rangeStart === aux.rangeEnd) continue;
     const mapping = INAV_MODE_MAP[aux.modeId];
     if (!mapping) continue;
     const apMode = vehicleType === 'plane' ? mapping.plane : mapping.copter;
@@ -1647,9 +1702,39 @@ function detectInavFlightModes(
     result.push({ arduPilotMode: apMode, name: mapping.name });
   }
 
+  // If INAV had no usable modes configured, provide sensible defaults
+  // based on vehicle type. These match common 6-position switch setups.
+  if (result.length === 0) {
+    if (vehicleType === 'plane') {
+      return [
+        { arduPilotMode: 0,  name: 'Manual' },
+        { arduPilotMode: 2,  name: 'Stabilize' },
+        { arduPilotMode: 5,  name: 'FBW-A' },
+        { arduPilotMode: 7,  name: 'Cruise' },
+        { arduPilotMode: 11, name: 'RTL' },
+        { arduPilotMode: 12, name: 'Loiter' },
+      ];
+    } else {
+      // Copter / quadplane
+      return [
+        { arduPilotMode: 0,  name: 'Stabilize' },
+        { arduPilotMode: 2,  name: 'AltHold' },
+        { arduPilotMode: 5,  name: 'Loiter' },
+        { arduPilotMode: 5,  name: 'Loiter' },
+        { arduPilotMode: 6,  name: 'RTL' },
+        { arduPilotMode: 9,  name: 'Land' },
+      ];
+    }
+  }
+
   const baseMode = 0;
   if (!seen.has(baseMode)) {
     result.unshift({ arduPilotMode: baseMode, name: vehicleType === 'plane' ? 'Manual' : 'Stabilize' });
+  }
+
+  // Pad to 6 slots by repeating the last mode
+  while (result.length < 6) {
+    result.push(result[result.length - 1]);
   }
 
   return result.slice(0, 6);

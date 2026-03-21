@@ -144,6 +144,55 @@ export function FrameStep({ onCanAdvanceChange }: FrameStepProps) {
     onCanAdvanceChange(selectedPreset !== null || importSource !== null);
   }, [selectedPreset, importSource, onCanAdvanceChange]);
 
+  // Auto-select preset when stagedParams arrive after mount (INAV import case).
+  // The useState initializer runs at mount time before import data is staged.
+  // This effect catches the delayed update and sets the local selection state.
+  useEffect(() => {
+    if (selectedPreset) return; // Already selected, don't override user choice
+    if (!importSource) return; // Only relevant for imports
+
+    // Copter: match by FRAME_CLASS + FRAME_TYPE
+    if (stagedParams.FRAME_CLASS !== undefined) {
+      const match = AIRFRAME_PRESETS.find((p) =>
+        p.additionalParams &&
+        Object.entries(p.additionalParams).every(([k, v]) => stagedParams[k] === v)
+      );
+      if (match) {
+        setSelectedPreset(match);
+        setSavedPresetId(match.id);
+        if (vehicleType === 'copter' && match.additionalParams?.FRAME_CLASS !== undefined) {
+          setCopterCategory(String(match.additionalParams.FRAME_CLASS));
+        }
+        return;
+      }
+    }
+
+    // Plane: match by servo function profile
+    if (vehicleType === 'plane' && stagedParams.SERVO1_FUNCTION !== undefined) {
+      for (const preset of AIRFRAME_PRESETS) {
+        if (preset.category !== 'plane') continue;
+        const expectedOutputs = new Map<number, number>();
+        if (preset.planeTemplate) {
+          for (const s of preset.planeTemplate.surfaces) {
+            expectedOutputs.set(s.defaultOutput, s.function);
+          }
+        }
+        for (const m of preset.motorTemplate.forwardMotors) {
+          expectedOutputs.set(m.defaultOutput, m.function);
+        }
+        let matches = 0;
+        for (const [output, func] of expectedOutputs) {
+          if (stagedParams[`SERVO${output}_FUNCTION`] === func) matches++;
+        }
+        if (expectedOutputs.size > 0 && matches === expectedOutputs.size) {
+          setSelectedPreset(preset);
+          setSavedPresetId(preset.id);
+          return;
+        }
+      }
+    }
+  }, [stagedParams, selectedPreset, importSource, vehicleType, setSavedPresetId]);
+
   // Auto-mark complete when import provides frame config
   useEffect(() => {
     if (importSource && !selectedPreset) {

@@ -125,6 +125,15 @@ export function Layout() {
 
   // Pre-fill name input when aircraft identity is resolved
   useEffect(() => {
+    // Check for INAV migration craft name first (takes priority over auto-generated name)
+    try {
+      const inavName = sessionStorage.getItem('ardugui-inav-craft-name');
+      if (inavName) {
+        setBoardNameInput(inavName);
+        sessionStorage.removeItem('ardugui-inav-craft-name');
+        return;
+      }
+    } catch { /* ignore */ }
     if (aircraftName) {
       setBoardNameInput(aircraftName);
     }
@@ -448,7 +457,12 @@ export function Layout() {
       <Footer />
 
       {/* Board detected -- wizard prompt with integrated naming */}
-      {showFreshBoardPrompt && (
+      {showFreshBoardPrompt && (() => {
+        // Detect if an INAV migration is in progress
+        let hasInavImport = false;
+        try { hasInavImport = sessionStorage.getItem('ardugui-inav-auto-import') === '1'; } catch { /* ignore */ }
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -461,14 +475,18 @@ export function Layout() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">
-                  {hasSavedWizardProgress ? 'Resume Setup?' : 'Setup Wizard'}
+                  {hasInavImport
+                    ? 'INAV Migration'
+                    : hasSavedWizardProgress ? 'Resume Setup?' : 'Setup Wizard'}
                 </h3>
                 <p className="text-xs text-muted">
-                  {hasSavedWizardProgress
-                    ? 'You have a previous wizard session in progress.'
-                    : isFreshBoard
-                      ? 'This flight controller appears unconfigured.'
-                      : 'Would you like to configure this board?'}
+                  {hasInavImport
+                    ? 'ArduPilot is running. Ready to import your INAV configuration.'
+                    : hasSavedWizardProgress
+                      ? 'You have a previous wizard session in progress.'
+                      : isFreshBoard
+                        ? 'This flight controller appears unconfigured.'
+                        : 'Would you like to configure this board?'}
                 </p>
               </div>
             </div>
@@ -490,7 +508,29 @@ export function Layout() {
             )}
 
             <div className="space-y-2 mb-5">
-              {hasSavedWizardProgress && (
+              {/* INAV migration: primary action is to import config */}
+              {hasInavImport && (
+                <button
+                  onClick={async () => {
+                    await saveBoardName();
+                    setShowFreshBoardPrompt(false);
+                    if (vehicleType) {
+                      const store = useWizardStore.getState();
+                      store.clearSavedProgress();
+                      store.start(vehicleType);
+                    }
+                  }}
+                  className="w-full rounded border-2 border-accent bg-accent/10 p-3 text-left transition hover:bg-accent/20"
+                >
+                  <p className="text-sm font-bold text-accent">Import INAV configuration</p>
+                  <p className="text-xs text-muted mt-0.5">
+                    Apply your INAV settings (receiver, GPS, OSD, motors, failsafes) to
+                    ArduPilot and walk through the setup wizard to verify everything.
+                  </p>
+                </button>
+              )}
+
+              {hasSavedWizardProgress && !hasInavImport && (
                 <button
                   onClick={async () => {
                     await saveBoardName();
@@ -507,30 +547,32 @@ export function Layout() {
                 </button>
               )}
 
-              <button
-                onClick={async () => {
-                  await saveBoardName();
-                  setShowFreshBoardPrompt(false);
-                  if (vehicleType) {
-                    const store = useWizardStore.getState();
-                    store.clearSavedProgress();
-                    store.start(vehicleType);
-                  }
-                }}
-                className={`w-full rounded border-2 p-3 text-left transition ${
-                  hasSavedWizardProgress
-                    ? 'border-border bg-surface-0 hover:border-accent/40'
-                    : 'border-accent bg-accent/10 hover:bg-accent/20'
-                }`}
-              >
-                <p className={`text-sm font-bold ${hasSavedWizardProgress ? 'text-foreground' : 'text-accent'}`}>
-                  Start from the beginning
-                </p>
-                <p className="text-xs text-muted mt-0.5">
-                  Go through every step from Frame selection. Existing FC settings are kept
-                  unless you change them.
-                </p>
-              </button>
+              {!hasInavImport && (
+                <button
+                  onClick={async () => {
+                    await saveBoardName();
+                    setShowFreshBoardPrompt(false);
+                    if (vehicleType) {
+                      const store = useWizardStore.getState();
+                      store.clearSavedProgress();
+                      store.start(vehicleType);
+                    }
+                  }}
+                  className={`w-full rounded border-2 p-3 text-left transition ${
+                    hasSavedWizardProgress
+                      ? 'border-border bg-surface-0 hover:border-accent/40'
+                      : 'border-accent bg-accent/10 hover:bg-accent/20'
+                  }`}
+                >
+                  <p className={`text-sm font-bold ${hasSavedWizardProgress ? 'text-foreground' : 'text-accent'}`}>
+                    Start from the beginning
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">
+                    Go through every step from Frame selection. Existing FC settings are kept
+                    unless you change them.
+                  </p>
+                </button>
+              )}
 
               <button
                 onClick={async () => {
@@ -539,28 +581,48 @@ export function Layout() {
                   if (vehicleType) {
                     const store = useWizardStore.getState();
                     store.clearSavedProgress();
+                    // Clear INAV import flags if skipping the import
+                    try {
+                      sessionStorage.removeItem('ardugui-inav-auto-import');
+                      sessionStorage.removeItem('ardugui-inav-dump');
+                      sessionStorage.removeItem('ardugui-inav-craft-name');
+                    } catch { /* ignore */ }
                     store.start(vehicleType, { pendingReset: true });
                   }
                 }}
                 className="w-full rounded border-2 border-border bg-surface-0 p-3 text-left transition hover:border-accent/40"
               >
-                <p className="text-sm font-bold text-foreground">Start fresh (factory reset)</p>
+                <p className="text-sm font-bold text-foreground">
+                  {hasInavImport ? 'Skip import -- start fresh (factory reset)' : 'Start fresh (factory reset)'}
+                </p>
                 <p className="text-xs text-muted mt-0.5">
                   Reset the flight controller to factory defaults, then start the wizard
-                  on a clean slate.
+                  on a clean slate.{hasInavImport ? ' Your INAV configuration will not be imported.' : ''}
                 </p>
               </button>
             </div>
 
             <button
-              onClick={async () => { await saveBoardName(); setShowFreshBoardPrompt(false); }}
+              onClick={async () => {
+                await saveBoardName();
+                setShowFreshBoardPrompt(false);
+                // Clear INAV import flags if dismissing
+                if (hasInavImport) {
+                  try {
+                    sessionStorage.removeItem('ardugui-inav-auto-import');
+                    sessionStorage.removeItem('ardugui-inav-dump');
+                    sessionStorage.removeItem('ardugui-inav-craft-name');
+                  } catch { /* ignore */ }
+                }
+              }}
               className="w-full text-center text-xs text-subtle hover:text-muted py-1"
             >
               Not now -- I'll configure manually
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Reboot-reconnect overlay -- lives in Layout so it persists across page changes */}
       {rebootProgress && (
