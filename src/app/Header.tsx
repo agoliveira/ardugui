@@ -13,7 +13,6 @@ import { saveAircraftName } from '@/utils/autoBackup';
 
 export function Header() {
   const status = useConnectionStore((s) => s.status);
-  const portPath = useConnectionStore((s) => s.portPath);
   const vehicleType = useVehicleStore((s) => s.type);
   const firmwareType = useVehicleStore((s) => s.firmwareType);
   const firmwareVersion = useVehicleStore((s) => s.firmwareVersion);
@@ -50,14 +49,18 @@ export function Header() {
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting' || status === 'identifying' || status === 'loading';
 
+  // Detect if migration flow is active (set by InavMigrationFlow during flash)
+  let isMigrating = false;
+  try { isMigrating = sessionStorage.getItem('ardugui-migration-active') === '1'; } catch { /* ignore */ }
+
   const handleDisconnect = async () => {
     if (demoActive) { stopDemo(); return; }
     await connectionManager.disconnect();
   };
 
   return (
-    <header className="flex h-10 items-center border-b border-border bg-surface-0 px-3 gap-2 text-[12px]">
-      {/* Left: connection */}
+    <header className="flex h-12 items-center border-b border-border bg-surface-0 px-3 gap-2 text-[12px]">
+      {/* Left: connection status */}
       <div className="flex items-center gap-2">
         {demoActive ? (
           <MonitorPlay size={14} className="text-accent" />
@@ -65,11 +68,13 @@ export function Header() {
           <Wifi size={14} className="text-success" />
         ) : isConnecting ? (
           <Loader2 size={14} className="animate-spin text-accent" />
+        ) : isMigrating ? (
+          <Loader2 size={14} className="animate-spin text-accent" />
         ) : (
           <WifiOff size={14} className="text-subtle" />
         )}
         <span className="font-medium text-muted">
-          {demoActive ? 'Demo Mode' : isConnected ? portPath : isConnecting ? 'Connecting...' : 'Disconnected'}
+          {demoActive ? 'Demo Mode' : isConnected ? 'Connected' : isConnecting ? 'Connecting...' : isMigrating ? 'Migrating...' : 'Disconnected'}
         </span>
 
         {(isConnected || isConnecting) && (

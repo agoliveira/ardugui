@@ -99,6 +99,43 @@ function createWindow() {
     },
   });
 
+  // ── WebUSB handlers ─────────────────────────────────────────────
+  // Must be registered on mainWindow.webContents.session (not session.defaultSession).
+  // This matches INAV Configurator's exact pattern from main.js lines 170-193.
+
+  const usbBootloaderIds = [
+    { vendorId: 0x0483, productId: 0xDF11 },  // STM32
+    { vendorId: 0x2E3C, productId: 0xDF11 },  // GD32
+    { vendorId: 0x314B, productId: 0x0106 },  // APM32
+  ];
+
+  mainWindow.webContents.session.on('select-usb-device', (_event, details, callback) => {
+    // Match INAV: try to find a DFU bootloader device, don't preventDefault
+    let permittedDevice: string | undefined;
+    if (details.deviceList) {
+      for (const device of details.deviceList) {
+        if (usbBootloaderIds.some(
+          (id) => device.vendorId === id.vendorId && device.productId === id.productId
+        )) {
+          permittedDevice = device.deviceId;
+          break;
+        }
+      }
+    }
+    if (permittedDevice) {
+      callback(permittedDevice);
+    } else {
+      callback();
+    }
+  });
+
+  mainWindow.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.deviceType === 'usb') {
+      return true;
+    }
+    return false;
+  });
+
   if (saved?.maximized) {
     mainWindow.maximize();
   }

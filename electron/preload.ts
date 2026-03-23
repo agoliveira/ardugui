@@ -39,6 +39,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('serial:ports-changed', handler);
       return () => ipcRenderer.removeListener('serial:ports-changed', handler);
     },
+    // Passive port detector -- inotify on Linux/Mac, delayed scan on Windows
+    startPortDetect: () => ipcRenderer.invoke('serial:start-port-detect'),
+    stopPortDetect: () => ipcRenderer.invoke('serial:stop-port-detect'),
+    onPortAppeared: (callback: (portPath: string) => void) => {
+      const handler = (_event: unknown, portPath: string) => callback(portPath);
+      ipcRenderer.on('serial:port-appeared', handler);
+      return () => ipcRenderer.removeListener('serial:port-appeared', handler);
+    },
   },
 
   // File system operations

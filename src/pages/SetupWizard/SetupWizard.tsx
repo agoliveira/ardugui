@@ -43,7 +43,7 @@ export function SetupWizard() {
   const currentStepIndex = useWizardStore((s) => s.currentStepIndex);
   const completedSteps = useWizardStore((s) => s.completedSteps);
   const abandon = useWizardStore((s) => s.abandon);
-  const isConnected = useConnectionStore((s) => s.status === 'connected');
+  const isConnected = useConnectionStore((s) => s.status === 'connected' || s.status === 'loading');
   const connectionStatus = useConnectionStore((s) => s.status);
   const portPath = useConnectionStore((s) => s.portPath);
   const baudRate = useConnectionStore((s) => s.baudRate);
@@ -52,6 +52,10 @@ export function SetupWizard() {
   const vehicleType = useWizardStore((s) => s.vehicleType);
 
   const [showWelcome, setShowWelcome] = useState(() => {
+    // Skip welcome if the wizard was started from the migration flow
+    // with INAV import data already staged
+    const importSource = useWizardStore.getState().importSource;
+    if (importSource === 'inav') return false;
     return currentStepIndex === 0 && completedSteps.size === 0;
   });
   const [showInavImport, setShowInavImport] = useState(false);

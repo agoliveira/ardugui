@@ -65,4 +65,22 @@ export function registerSerialHandlers(
   ipcMain.handle('serial:stop-port-watch', async () => {
     serialManager.stopPortWatch();
   });
+
+  // Passive port detector -- inotify/FSEvents on Linux/Mac, delayed scan on Windows.
+  // Used after DFU flash to detect when the board finishes rebooting without
+  // any USB probing that could interfere with the boot process.
+  ipcMain.handle('serial:start-port-detect', async () => {
+    const { startPortDetector } = await import('./portDetector');
+    startPortDetector((portPath) => {
+      const win = getWindow();
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('serial:port-appeared', portPath);
+      }
+    });
+  });
+
+  ipcMain.handle('serial:stop-port-detect', async () => {
+    const { stopPortDetector } = await import('./portDetector');
+    stopPortDetector();
+  });
 }

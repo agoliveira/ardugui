@@ -6,7 +6,7 @@ Built with Electron + React + TypeScript + Tailwind.
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![Status](https://img.shields.io/badge/status-RC1%20%2F%20feature%20complete-orange)
+![Status](https://img.shields.io/badge/status-RC3%20%2F%20feature%20complete-orange)
 
 ---
 
@@ -30,18 +30,18 @@ ArduGUI is a **configurator**, not a ground control station. It handles initial 
 Two paths to first flight:
 
 1. **Start Fresh** -- flash firmware, run the setup wizard, calibrate, fly
-2. **Migrate from INAV** -- import your "diff all" config, review the translation, calibrate, fly
+2. **Migrate from INAV** -- connect an INAV board, ArduGUI extracts the config, flashes ArduPilot, imports parameters, and continues with calibration
 
 ### Key Features
 
 | Feature | Description |
 |---|---|
 | **Setup Wizard** | 15-step guided flow from frame selection to first flight readiness. Write-as-you-go -- params saved on each step, rollback on abandon. |
-| **INAV Migration** | Import "diff all" config. Translates frame type, motor mapping, receiver, battery, failsafes, GPS, compass, OSD layout, flight modes, and channel map. |
+| **INAV Migration** | Live migration from connected INAV boards: auto-detect, extract config, DFU flash ArduPilot, import parameters. Also supports manual paste of "diff all" / "dump all" output. |
 | **VTOL Configuration** | Full quadplane support: tilt servos, transitions, assist thresholds, Q_ parameter lifecycle. This is the key differentiator. |
 | **414-Board Database** | Generated from ArduPilot hwdef files. Board-aware wiring guides with physical pad labels. |
 | **MAVFTP** | Parameter download in ~300ms (vs ~15s with traditional MAVLink). |
-| **Firmware Flashing** | Download from ArduPilot manifest, flash via bootloader protocol. BDShot variant toggle. |
+| **Firmware Flashing** | Download from ArduPilot manifest, flash via bootloader protocol or STM32 DFU. BDShot variant toggle. |
 | **3D Calibration Viewer** | Accelerometer 6-position calibration with animated Three.js model. |
 | **Pre-flight Dashboard** | Sensor health, pre-arm failures, parameter validation, GPS quality, battery status. |
 
@@ -68,7 +68,7 @@ Pre-built binaries are available on the [Releases](../../releases) page:
 ### Build from Source
 
 ```bash
-git clone https://github.com/user/ardugui.git
+git clone https://github.com/agoliveira/ardugui.git
 cd ardugui
 npm install
 npm run dev        # Development mode with hot reload
@@ -103,13 +103,16 @@ Every wizard function is also accessible as a standalone sidebar page for manual
 
 ## INAV Migration
 
-If you are moving from INAV to ArduPilot:
+ArduGUI can migrate directly from a connected INAV board:
 
-1. In INAV Configurator CLI, type `diff all` and copy the output.
-2. In ArduGUI's Setup Wizard, click "Migrating from INAV?" on the Frame step.
-3. Paste the text. ArduGUI translates ~80-90% of the configuration automatically.
-4. Complete calibration (accel, compass, RC) -- these are hardware-specific and cannot transfer.
-5. Review flight modes and failsafes -- the translation is best-effort.
+1. Connect the INAV board to USB. ArduGUI detects the INAV firmware automatically.
+2. Choose "Migrate with configuration" -- ArduGUI extracts the full config via CLI.
+3. ArduGUI downloads the matching ArduPilot firmware and flashes it via DFU.
+4. After flashing, unplug and replug the USB cable when prompted (power cycle required for clean boot).
+5. Review the parameter mapping -- ArduGUI shows what transferred, what was adapted, and what was skipped.
+6. Confirm to write the parameters, then continue with the Setup Wizard or go to manual pages.
+
+Alternatively, you can paste a previously saved `dump all` or `diff all` output into the Setup Wizard's import dialog.
 
 **What transfers:** frame type, motor mapping, receiver protocol, serial ports, battery thresholds, GPS, compass orientation, board alignment, OSD layout, flight modes, channel map, failsafes, motor protocol.
 
@@ -194,12 +197,12 @@ tools/
 
 ---
 
-## Known Issues (v1.0.0-rc2)
+## Known Issues (v1.0.0-rc3)
 
-- Connected flash path (MAVLink reboot-to-bootloader) -- needs hardware verification
-- OSD import param names -- code-reviewed but not hardware-verified
-- INAV CLI extraction -- untested on real INAV hardware
-- Occasional "no heartbeat" after reboot cycles
+- After DFU flash from INAV migration, a USB cable replug (power cycle) may be required for ArduPilot to boot cleanly. ArduGUI detects this automatically and prompts the user.
+- Connected flash path (MAVLink reboot-to-bootloader) -- needs hardware verification on more boards.
+- Custom .apj firmware flash reports "invalid image_size" (validates before decompression instead of after).
+- OSD import param names -- code-reviewed but not hardware-verified on all OSD types.
 
 See [TODO.md](TODO.md) for the full roadmap.
 

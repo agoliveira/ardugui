@@ -58,7 +58,7 @@ export function Footer() {
           </div>
         )}
         {!isConnected && (
-          <span className="text-subtle">Ready</span>
+          <span className="text-subtle">Not connected</span>
         )}
       </footer>
 

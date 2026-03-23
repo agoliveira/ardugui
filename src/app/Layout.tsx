@@ -167,10 +167,15 @@ export function Layout() {
 
   // Show wizard prompt when saved progress exists or fresh board detected
   useEffect(() => {
+    // Don't show if INAV migration flow is still active (it handles its own wizard launch)
+    let migrationActive = false;
+    try { migrationActive = sessionStorage.getItem('ardugui-migration-active') === '1'; } catch { /* ignore */ }
+
     if (
       connectionStatus === 'connected' &&
       (isFreshBoard || hasSavedWizardProgress) &&
       !didAutoRedirect.current &&
+      !migrationActive &&
       !useConnectionStore.getState().pendingPage &&
       !useWizardStore.getState().active &&
       parameters.size > 0

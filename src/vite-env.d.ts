@@ -32,6 +32,10 @@ declare global {
       productId?: string;
       pnpId?: string;
     }[]) => void) => () => void;
+    // Passive port detector -- inotify on Linux/Mac, delayed scan on Windows
+    startPortDetect: () => Promise<void>;
+    stopPortDetect: () => Promise<void>;
+    onPortAppeared: (callback: (portPath: string) => void) => () => void;
   }
 
   interface ElectronNetAPI {

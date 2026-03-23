@@ -96,93 +96,6 @@ export class InavCli {
   }
 
   /**
-   * Wait for the INAV CLI prompt '# ' at the end of the buffer.
-   *
-   * Unlike waitFor(), this distinguishes the real prompt from comment
-   * lines that also contain '# ' (e.g. '# version', '# INAV/BOARD...').
-   * The real prompt appears on its own line at the buffer tail with no
-   * text following it. We require a silence period after detecting the
-   * pattern to confirm the FC has finished sending data.
-   *
-   * @param timeoutMs  Overall timeout
-   * @param settleMs   Silence duration to confirm prompt is real (default 1500ms).
-   *                   Serial data arrives in chunks with gaps between lines.
-   *                   300ms is too short -- F4 boards can pause 500ms+ between chunks.
-   * @param minSize    Minimum buffer size before prompt is considered real.
-   *                   Prevents early resolution on comment-only headers.
-   */
-  private waitForPrompt(timeoutMs: number = 5000, settleMs: number = 1500, minSize: number = 0): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let settleTimer: ReturnType<typeof setTimeout> | null = null;
-
-      const cleanup = () => {
-        if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
-        this.resolveWaiter = null;
-      };
-
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(new Error(`Timeout waiting for CLI prompt after ${timeoutMs}ms`));
-      }, timeoutMs);
-
-      const check = () => {
-        // The CLI prompt is '# ' on its own line at the end of the buffer.
-        // Match: newline (or start of buffer) followed by '# ' at the very end.
-        if (/(\r?\n|^)# $/.test(this.buffer) && this.buffer.length >= minSize) {
-          // Looks like a prompt -- wait for silence to confirm it's real
-          // (not a partially-received comment line like '# vers' before 'ion\r\n')
-          if (settleTimer) clearTimeout(settleTimer);
-          settleTimer = setTimeout(() => {
-            clearTimeout(timer);
-            this.resolveWaiter = null;
-            resolve(this.buffer);
-          }, settleMs);
-        } else {
-          // More data arrived after the '# ' -- it was a comment, not a prompt
-          if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
-        }
-      };
-
-      // Check current buffer immediately
-      check();
-
-      // Re-check on each new data arrival
-      this.resolveWaiter = () => check();
-    });
-  }
-
-  /**
-   * Wait until a line matching exactly the given text appears in the buffer.
-   * Unlike waitFor() which uses substring includes(), this checks for the
-   * text as a complete line (anchored by newlines) to avoid false matches
-   * on comments like "# save configuration" when looking for "save".
-   */
-  private waitForLine(lineText: string, timeoutMs: number = 5000): Promise<string> {
-    // Match: start-of-buffer or newline, then the exact text, then \r\n or \n
-    const pattern = new RegExp(`(^|\\r?\\n)${lineText}\\r?\\n`);
-
-    return new Promise((resolve, reject) => {
-      if (pattern.test(this.buffer)) {
-        resolve(this.buffer);
-        return;
-      }
-
-      const timer = setTimeout(() => {
-        this.resolveWaiter = null;
-        reject(new Error(`Timeout waiting for line "${lineText}" after ${timeoutMs}ms`));
-      }, timeoutMs);
-
-      this.resolveWaiter = (buf: string) => {
-        if (pattern.test(buf)) {
-          clearTimeout(timer);
-          this.resolveWaiter = null;
-          resolve(buf);
-        }
-      };
-    });
-  }
-
-  /**
    * Clear the receive buffer.
    */
   private clearBuffer(): void {
@@ -251,20 +164,29 @@ export class InavCli {
    * marker never arrives (e.g. older INAV without batch mode).
    */
   async extractDumpAll(onProgress?: ProgressCallback): Promise<string> {
-    onProgress?.('Extracting full configuration...');
+    onProgress?.('Extracting full configuration (this may take a few seconds)...');
     this.clearBuffer();
     await this.send('dump all\r\n');
 
-    // Primary: wait for "batch end" -- the last line INAV emits after a dump
-    try {
-      await this.waitForLine('batch end', 60000);
-      // Let the trailing prompt arrive
-      await new Promise((r) => setTimeout(r, 300));
-    } catch {
-      // Fallback for older INAV without batch mode
-      onProgress?.('Waiting for CLI prompt...');
-      await this.waitForPrompt(10000, 2000, 1000);
-    }
+    // INAV dump ends with "save\r\n# " (some versions also emit "batch end").
+    // Wait for "save" on its own line AND the CLI prompt at the buffer tail.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.resolveWaiter = null;
+        reject(new Error('Timeout waiting for dump to complete'));
+      }, 60000);
+
+      const check = () => {
+        if (/\nsave\r?\n/.test(this.buffer) && /# $/.test(this.buffer)) {
+          clearTimeout(timer);
+          this.resolveWaiter = null;
+          resolve();
+        }
+      };
+
+      check();
+      this.resolveWaiter = () => check();
+    });
 
     const output = this.buffer;
 
@@ -331,5 +253,16 @@ export class InavCli {
     try {
       await this.send('exit\r\n');
     } catch { /* ignore -- port may close during reboot */ }
+  }
+
+  /**
+   * Send the "dfu" command to enter USB DFU bootloader mode.
+   * The serial port will drop shortly after as the board re-enumerates
+   * as a USB DFU device.
+   */
+  async enterDfu(): Promise<void> {
+    try {
+      await this.send('dfu\r\n');
+    } catch { /* ignore -- port drops as board enters DFU */ }
   }
 }

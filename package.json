@@ -44,6 +44,7 @@
     "serialport": "^13.0.0",
     "sql.js": "^1.14.0",
     "three": "^0.183.1",
+    "usb": "^2.17.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
